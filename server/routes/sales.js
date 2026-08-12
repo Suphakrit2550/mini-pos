@@ -1,3 +1,5 @@
+// API ขายของ/ยกเลิก/คืนเงิน
+
 const express = require('express');
 const db = require('../db');
 const { toSatang, toBaht } = require('../lib/money');
