@@ -1,3 +1,5 @@
+// API รายงานยอดขาย/สต็อกใกล้หมด
+
 const express = require('express');
 const db = require('../db');
 const { toBaht } = require('../lib/money');
