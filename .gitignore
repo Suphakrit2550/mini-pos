@@ -1,0 +1,12 @@
+node_modules/
+server/data/*.db
+server/data/*.db-journal
+server/data/*.db-wal
+server/data/*.db-shm
+server/data/ca-key.pem
+server/data/ca-cert.pem
+.DS_Store
+public/uploads/*
+!public/uploads/.gitkeep
+logs/
+.claude/settings.local.json

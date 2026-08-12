@@ -1,0 +1,72 @@
+.orders-page {
+  flex: 1;
+  padding: 20px;
+}
+
+.date-filter {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.date-filter .field {
+  margin-bottom: 0;
+}
+
+.date-filter input[type="date"] {
+  height: var(--tap);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 12px;
+  font-size: 15px;
+  font-family: inherit;
+  background: var(--surface);
+}
+
+.order-customer {
+  color: var(--text-muted);
+}
+
+.detail-items {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 0;
+  margin: 10px 0;
+}
+
+.detail-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 15px;
+  padding: 4px 0;
+}
+
+#detailStatus {
+  margin: 4px 0 10px;
+}
+
+.void-info {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font-size: 14px;
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+
+.audit-list {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.audit-list .audit-entry {
+  padding: 4px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+#detailVoidActions .btn {
+  flex: 1;
+}

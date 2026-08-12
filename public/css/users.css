@@ -1,0 +1,75 @@
+.users-page {
+  flex: 1;
+  padding: 20px;
+}
+
+.users-page .page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.users-page .page-header h2 {
+  margin: 0;
+}
+
+.role-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.role-badge-admin {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.role-badge-staff {
+  background: var(--bg);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.status-badge-active {
+  background: #eaf3ee;
+  color: var(--success);
+}
+
+.status-badge-inactive {
+  background: var(--border);
+  color: var(--text-muted);
+}
+
+.status-badge-locked {
+  background: var(--danger-bg);
+  color: var(--danger);
+  margin-left: 6px;
+}
+
+.row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.row-actions .btn {
+  height: 36px;
+  padding: 0 12px;
+  font-size: 13px;
+  white-space: nowrap;
+}

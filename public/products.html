@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>จัดการสินค้า · Mini POS</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/products.css">
+<link rel="stylesheet" href="css/auth.css">
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('pos-theme') || 'light');</script>
+<script src="js/auth.js"></script>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <h1>Mini POS</h1>
+    <div class="topbar-right">
+      <nav class="nav">
+        <a href="index.html">ขายสินค้า</a>
+        <a href="products.html" class="active">จัดการสินค้า</a>
+        <a href="orders.html">ประวัติการขาย</a>
+        <a href="reports.html">รายงาน</a>
+        <a href="settings.html">ตั้งค่าร้าน</a>
+      </nav>
+      <button class="theme-toggle" id="themeToggle" aria-label="สลับโหมดมืด/สว่าง"></button>
+    </div>
+  </header>
+
+  <div class="main">
+    <section class="products-page scroll">
+      <div class="page-header">
+        <div id="ownerSelectWrap" class="owner-select-wrap hidden">
+          <label for="ownerSelect">จัดการสินค้าของ</label>
+          <select id="ownerSelect"></select>
+        </div>
+        <input type="text" id="search" placeholder="ค้นหาสินค้า / Search">
+        <button class="btn btn-primary" id="addProductBtn">+ เพิ่มสินค้า</button>
+      </div>
+
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th>สินค้า</th>
+              <th>หมวดหมู่</th>
+              <th class="text-right">ราคา</th>
+              <th class="text-right">คงเหลือ</th>
+              <th class="text-right">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="productTableBody"></tbody>
+        </table>
+        <p id="emptyState" class="empty-state hidden">ยังไม่มีสินค้า เพิ่มสินค้าแรกของคุณ</p>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="modal-backdrop hidden" id="productModal">
+  <div class="modal">
+    <h2 id="modalTitle">เพิ่มสินค้า</h2>
+    <form id="productForm">
+      <input type="hidden" id="productId">
+      <div class="field">
+        <label>รูปสินค้า</label>
+        <div class="image-picker">
+          <img id="imagePreview" class="image-preview hidden" alt="">
+          <div id="imagePlaceholder" class="image-preview image-placeholder">ไม่มีรูป</div>
+          <input type="file" id="fieldImage" accept="image/jpeg,image/png,image/webp">
+        </div>
+      </div>
+      <div class="field">
+        <label>ชื่อสินค้า (ไทย)</label>
+        <input type="text" id="fieldName" required>
+      </div>
+      <div class="field">
+        <label>Product name (English)</label>
+        <input type="text" id="fieldNameEn">
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>ราคาขาย (บาท)</label>
+          <input type="number" id="fieldPrice" step="0.01" min="0" required>
+        </div>
+        <div class="field">
+          <label>ต้นทุน (บาท)</label>
+          <input type="number" id="fieldCost" step="0.01" min="0">
+        </div>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <label>จำนวนคงเหลือ</label>
+          <input type="number" id="fieldStock" min="0" required>
+        </div>
+        <div class="field">
+          <label>แจ้งเตือนเมื่อเหลือ</label>
+          <input type="number" id="fieldThreshold" min="0" value="5">
+        </div>
+      </div>
+      <div class="field">
+        <label>หมวดหมู่</label>
+        <input type="text" id="fieldCategory">
+      </div>
+      <div class="field">
+        <label>บาร์โค้ด</label>
+        <div class="barcode-input-row">
+          <input type="text" id="fieldBarcode" placeholder="สแกนหรือพิมพ์บาร์โค้ด">
+          <button type="button" class="btn btn-ghost" id="scanBarcodeBtn">📷 สแกน</button>
+        </div>
+      </div>
+
+      <div id="editAuditFields" class="hidden">
+        <div class="field-row">
+          <div class="field">
+            <label>แก้ไขโดย</label>
+            <input type="text" id="fieldActor" placeholder="ชื่อพนักงาน">
+          </div>
+          <div class="field">
+            <label>เหตุผล (ไม่บังคับ)</label>
+            <input type="text" id="fieldReason" placeholder="เช่น ปรับราคาตามต้นทุนใหม่">
+          </div>
+        </div>
+        <div class="field">
+          <label>ประวัติการแก้ไข</label>
+          <div id="productHistory" class="history-list"></div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="cancelProduct">ยกเลิก</button>
+        <button type="submit" class="btn btn-primary">บันทึก</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-backdrop hidden" id="stockModal">
+  <div class="modal">
+    <h2>ปรับสต็อก</h2>
+    <p class="muted" id="stockProductName"></p>
+    <div class="field">
+      <label>จำนวนที่ต้องการปรับ (+ เพิ่ม / − ลด)</label>
+      <input type="number" id="stockChange" placeholder="เช่น 10 หรือ -5">
+    </div>
+    <div class="field">
+      <label>ผู้ดำเนินการ</label>
+      <input type="text" id="stockActor" placeholder="ชื่อพนักงาน">
+    </div>
+    <div class="field">
+      <label>เหตุผล (ไม่บังคับ)</label>
+      <input type="text" id="stockReason" placeholder="รับสินค้าเข้า, ของเสียหาย ฯลฯ">
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" id="cancelStock">ยกเลิก</button>
+      <button type="button" class="btn btn-primary" id="confirmStock">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop hidden" id="deleteModal">
+  <div class="modal">
+    <h2>ลบสินค้า</h2>
+    <p class="muted" id="deleteProductName"></p>
+    <div class="field">
+      <label>ผู้ดำเนินการ</label>
+      <input type="text" id="deleteActor" placeholder="ชื่อพนักงาน">
+    </div>
+    <div class="field">
+      <label>เหตุผล</label>
+      <input type="text" id="deleteReason" placeholder="เช่น เลิกขายสินค้านี้แล้ว">
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" id="cancelDelete">ยกเลิก</button>
+      <button type="button" class="btn btn-danger" id="confirmDelete">ยืนยันลบ</button>
+    </div>
+  </div>
+</div>
+
+<script src="vendor/html5-qrcode.min.js"></script>
+<script src="js/api.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/scanner.js"></script>
+<script src="js/products.js"></script>
+</body>
+</html>

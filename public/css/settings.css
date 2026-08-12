@@ -1,0 +1,18 @@
+.settings-page {
+  flex: 1;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+.settings-card {
+  padding: 24px;
+  width: 100%;
+  max-width: 480px;
+  height: fit-content;
+}
+
+.settings-card h2 {
+  margin: 0 0 16px;
+  font-size: 18px;
+}

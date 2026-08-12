@@ -1,0 +1,248 @@
+.pos-products {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  overflow: hidden;
+}
+
+.pos-search {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.pos-search input {
+  flex: 1;
+  height: var(--tap);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 16px;
+  font-size: 16px;
+  font-family: inherit;
+  background: var(--surface);
+}
+
+.pos-search .btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.product-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+  align-content: start;
+  padding-bottom: 16px;
+}
+
+.product-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 96px;
+  transition: transform 0.05s ease, border-color 0.1s ease;
+}
+
+.product-card:active {
+  transform: scale(0.96);
+  border-color: var(--accent);
+}
+
+.product-card.out-of-stock {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.product-card .p-image {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 4px;
+  background: var(--bg);
+}
+
+.product-card .p-image-placeholder {
+  border: 1px dashed var(--border);
+}
+
+.product-card .p-name {
+  font-weight: 600;
+  font-size: 16px;
+}
+
+.product-card .p-name-en {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.product-card .p-price {
+  margin-top: auto;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.product-card .p-stock {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.pos-cart {
+  width: 340px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  margin: 16px 16px 16px 0;
+}
+
+.cart-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 16px 8px;
+}
+
+.cart-header h2 {
+  font-size: 17px;
+  margin: 0;
+}
+
+.cart-items {
+  flex: 1;
+  padding: 0 16px;
+}
+
+.cart-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.ci-image {
+  width: 40px;
+  height: 40px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: var(--bg);
+  flex-shrink: 0;
+}
+
+.ci-image-placeholder {
+  border: 1px dashed var(--border);
+}
+
+.cart-item .ci-name {
+  flex: 1;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.cart-item .ci-price {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.qty-control {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.qty-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.qty-value {
+  min-width: 22px;
+  text-align: center;
+  font-weight: 600;
+}
+
+.ci-subtotal {
+  min-width: 64px;
+  text-align: right;
+  font-weight: 600;
+}
+
+.cart-footer {
+  padding: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.cart-total-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+.checkout-total {
+  font-size: 32px;
+  font-weight: 700;
+  margin: 4px 0 20px;
+}
+
+.quick-cash {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.quick-cash-btn {
+  padding: 0 8px;
+  font-size: 14px;
+}
+
+.change-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 17px;
+  font-weight: 600;
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.modal-actions .btn {
+  flex: 1;
+}
+
+#receiptBody {
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 0;
+  margin: 10px 0;
+}
+
+.receipt-line {
+  display: flex;
+  justify-content: space-between;
+  font-size: 15px;
+  padding: 4px 0;
+}

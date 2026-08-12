@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>ตั้งค่าร้าน · Mini POS</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/settings.css">
+<link rel="stylesheet" href="css/auth.css">
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('pos-theme') || 'light');</script>
+<script src="js/auth.js"></script>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <h1>Mini POS</h1>
+    <div class="topbar-right">
+      <nav class="nav">
+        <a href="index.html">ขายสินค้า</a>
+        <a href="products.html">จัดการสินค้า</a>
+        <a href="orders.html">ประวัติการขาย</a>
+        <a href="reports.html">รายงาน</a>
+        <a href="settings.html" class="active">ตั้งค่าร้าน</a>
+      </nav>
+      <button class="theme-toggle" id="themeToggle" aria-label="สลับโหมดมืด/สว่าง"></button>
+    </div>
+  </header>
+
+  <div class="main">
+    <section class="settings-page scroll">
+      <div class="card settings-card">
+        <h2>ข้อมูลร้าน (แสดงบนใบเสร็จ)</h2>
+        <form id="settingsForm">
+          <div class="field">
+            <label>ชื่อร้าน</label>
+            <input type="text" id="fieldShopName" required>
+          </div>
+          <div class="field">
+            <label>ที่อยู่</label>
+            <input type="text" id="fieldAddress" placeholder="เช่น 123 ถ.สุขุมวิท กรุงเทพฯ">
+          </div>
+          <div class="field">
+            <label>เบอร์โทร</label>
+            <input type="text" id="fieldPhone" placeholder="เช่น 08x-xxx-xxxx">
+          </div>
+          <div class="field">
+            <label>ข้อความท้ายใบเสร็จ</label>
+            <input type="text" id="fieldFooter" placeholder="เช่น ขอบคุณที่ใช้บริการ">
+          </div>
+          <button type="submit" class="btn btn-primary">บันทึก</button>
+        </form>
+      </div>
+
+      <div class="card settings-card">
+        <h2>เปลี่ยนรหัสผ่าน</h2>
+        <form id="passwordForm">
+          <div class="field">
+            <label>รหัสผ่านปัจจุบัน</label>
+            <input type="password" id="fieldCurrentPassword" autocomplete="current-password" required>
+          </div>
+          <div class="field">
+            <label>รหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร)</label>
+            <input type="password" id="fieldNewPassword" autocomplete="new-password" minlength="6" required>
+          </div>
+          <button type="submit" class="btn btn-primary">เปลี่ยนรหัสผ่าน</button>
+        </form>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/settings.js"></script>
+</body>
+</html>

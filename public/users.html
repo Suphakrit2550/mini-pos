@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>จัดการผู้ใช้งาน · Mini POS</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/users.css">
+<link rel="stylesheet" href="css/auth.css">
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('pos-theme') || 'light');</script>
+<script>window.REQUIRE_ADMIN = true;</script>
+<script src="js/auth.js"></script>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <h1>Mini POS</h1>
+    <div class="topbar-right">
+      <nav class="nav">
+        <a href="index.html">ขายสินค้า</a>
+        <a href="products.html">จัดการสินค้า</a>
+        <a href="orders.html">ประวัติการขาย</a>
+        <a href="reports.html">รายงาน</a>
+        <a href="settings.html">ตั้งค่าร้าน</a>
+      </nav>
+      <button class="theme-toggle" id="themeToggle" aria-label="สลับโหมดมืด/สว่าง"></button>
+    </div>
+  </header>
+
+  <div class="main">
+    <section class="users-page scroll">
+      <div class="page-header">
+        <h2>จัดการผู้ใช้งาน</h2>
+        <button class="btn btn-primary" id="addUserBtn">+ เพิ่มผู้ใช้</button>
+      </div>
+
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th>ชื่อผู้ใช้</th>
+              <th>สิทธิ์</th>
+              <th>สถานะ</th>
+              <th>สร้างเมื่อ</th>
+              <th class="text-right">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="userTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="modal-backdrop hidden" id="userModal">
+  <div class="modal">
+    <h2>เพิ่มผู้ใช้</h2>
+    <form id="userForm">
+      <div class="field">
+        <label>ชื่อผู้ใช้</label>
+        <input type="text" id="fieldUsername" autocomplete="off" required>
+      </div>
+      <div class="field">
+        <label>รหัสผ่าน (อย่างน้อย 6 ตัวอักษร)</label>
+        <input type="password" id="fieldPassword" autocomplete="new-password" minlength="6" required>
+      </div>
+      <div class="field">
+        <label>สิทธิ์</label>
+        <select id="fieldRole">
+          <option value="staff">พนักงาน</option>
+          <option value="admin">แอดมิน</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn btn-ghost" id="cancelUser">ยกเลิก</button>
+        <button type="submit" class="btn btn-primary">บันทึก</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="modal-backdrop hidden" id="resetPasswordModal">
+  <div class="modal">
+    <h2>รีเซ็ตรหัสผ่าน</h2>
+    <p class="muted" id="resetPasswordUsername"></p>
+    <div class="field">
+      <label>รหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร)</label>
+      <input type="password" id="fieldResetPassword" autocomplete="new-password" minlength="6">
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" id="cancelResetPassword">ยกเลิก</button>
+      <button type="button" class="btn btn-primary" id="confirmResetPassword">บันทึก</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop hidden" id="deleteUserModal">
+  <div class="modal">
+    <h2>ลบผู้ใช้</h2>
+    <p class="muted" id="deleteUserName"></p>
+    <p class="muted">การลบถาวร กู้คืนไม่ได้ — พิมพ์รหัสผ่านของคุณเองเพื่อยืนยัน</p>
+    <div class="field">
+      <label>รหัสผ่านของคุณ</label>
+      <input type="password" id="fieldDeleteConfirmPassword" autocomplete="current-password">
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" id="cancelDeleteUser">ยกเลิก</button>
+      <button type="button" class="btn btn-danger" id="confirmDeleteUser">ยืนยันลบ</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/users.js"></script>
+</body>
+</html>

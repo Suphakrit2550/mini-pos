@@ -1,0 +1,85 @@
+.reports-page {
+  flex: 1;
+  padding: 20px;
+}
+
+.date-filter {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.date-filter .field {
+  margin-bottom: 0;
+}
+
+.date-filter input[type="date"] {
+  height: var(--tap);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 12px;
+  font-size: 15px;
+  font-family: inherit;
+  background: var(--surface);
+}
+
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(160px, 260px));
+  gap: 14px;
+  margin-bottom: 20px;
+}
+
+.summary-card {
+  padding: 18px 20px;
+}
+
+.summary-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.summary-value {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.summary-profit {
+  color: var(--success);
+}
+
+.daily-panel {
+  margin-bottom: 16px;
+}
+
+.report-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.report-panel {
+  padding: 18px 20px;
+}
+
+.report-panel h3 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.report-panel table th,
+.report-panel table td {
+  padding: 8px 4px;
+  font-size: 14px;
+}
+
+@media (max-width: 800px) {
+  .report-grid {
+    grid-template-columns: 1fr;
+  }
+  .summary-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+}

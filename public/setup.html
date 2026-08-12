@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>ตั้งค่าบัญชีแรก · Mini POS</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/auth.css">
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('pos-theme') || 'light');</script>
+</head>
+<body>
+<div class="auth-page">
+  <div class="card auth-card">
+    <h1>ยินดีต้อนรับ</h1>
+    <p class="muted">สร้างบัญชีผู้ดูแลระบบบัญชีแรกก่อนเริ่มใช้งาน</p>
+
+    <p class="auth-error" id="authError"></p>
+
+    <form id="setupForm">
+      <div class="field">
+        <label>ชื่อผู้ใช้</label>
+        <input type="text" id="fieldUsername" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label>รหัสผ่าน (อย่างน้อย 6 ตัวอักษร)</label>
+        <input type="password" id="fieldPassword" autocomplete="new-password" minlength="6" required>
+      </div>
+      <div class="field">
+        <label>ยืนยันรหัสผ่าน</label>
+        <input type="password" id="fieldPasswordConfirm" autocomplete="new-password" minlength="6" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">สร้างบัญชี</button>
+    </form>
+  </div>
+</div>
+
+<script src="js/setup.js"></script>
+</body>
+</html>

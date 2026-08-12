@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>ประวัติการขาย · Mini POS</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/orders.css">
+<link rel="stylesheet" href="css/auth.css">
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('pos-theme') || 'light');</script>
+<script src="js/auth.js"></script>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <h1>Mini POS</h1>
+    <div class="topbar-right">
+      <nav class="nav">
+        <a href="index.html">ขายสินค้า</a>
+        <a href="products.html">จัดการสินค้า</a>
+        <a href="orders.html" class="active">ประวัติการขาย</a>
+        <a href="reports.html">รายงาน</a>
+        <a href="settings.html">ตั้งค่าร้าน</a>
+      </nav>
+      <button class="theme-toggle" id="themeToggle" aria-label="สลับโหมดมืด/สว่าง"></button>
+    </div>
+  </header>
+
+  <div class="main">
+    <section class="orders-page scroll">
+      <div class="date-filter">
+        <div class="field">
+          <label>จากวันที่</label>
+          <input type="date" id="fromDate">
+        </div>
+        <div class="field">
+          <label>ถึงวันที่</label>
+          <input type="date" id="toDate">
+        </div>
+        <button class="btn btn-primary" id="applyFilter">ค้นหา</button>
+        <button class="btn btn-ghost" id="todayFilter">วันนี้</button>
+      </div>
+
+      <div class="card">
+        <table>
+          <thead>
+            <tr>
+              <th>บิลเลขที่</th>
+              <th>เวลา</th>
+              <th>ลูกค้า</th>
+              <th class="text-right">จำนวนรายการ</th>
+              <th class="text-right">ยอดรวม</th>
+              <th>สถานะ</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="ordersTableBody"></tbody>
+        </table>
+        <p id="emptyState" class="empty-state hidden">ไม่มีออเดอร์ในช่วงเวลานี้</p>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="modal-backdrop hidden" id="orderDetailModal">
+  <div class="modal">
+    <h2>บิลเลขที่ #<span id="detailOrderId"></span></h2>
+    <p class="muted" id="detailMeta"></p>
+    <div id="detailStatus"></div>
+    <div id="detailItems" class="detail-items"></div>
+    <div id="detailVoidInfo" class="void-info hidden"></div>
+    <div id="detailAudit" class="audit-list"></div>
+    <div class="modal-actions" id="detailVoidActions">
+      <button class="btn btn-danger" id="cancelOrderBtn">ยกเลิกออเดอร์</button>
+      <button class="btn btn-danger" id="refundOrderBtn">คืนเงิน</button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="printOrderBtn">พิมพ์ใบเสร็จ</button>
+      <button class="btn btn-primary btn-block" id="closeDetail">ปิด</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop hidden" id="voidModal">
+  <div class="modal">
+    <h2 id="voidModalTitle">ยกเลิกออเดอร์</h2>
+    <div class="field">
+      <label>ชื่อผู้ดำเนินการ</label>
+      <input type="text" id="voidActorInput" placeholder="ชื่อพนักงาน">
+    </div>
+    <div class="field">
+      <label>เหตุผล</label>
+      <input type="text" id="voidReasonInput" placeholder="เช่น ลูกค้าสั่งผิด, สินค้าชำรุด">
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" id="cancelVoid">ยกเลิก</button>
+      <button type="button" class="btn btn-danger" id="confirmVoid">ยืนยัน</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/orders.js"></script>
+</body>
+</html>

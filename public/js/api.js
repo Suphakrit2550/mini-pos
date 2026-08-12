@@ -1,0 +1,122 @@
+const api = {
+  async request(method, url, body) {
+    const res = await fetch(url, {
+      method,
+      headers: body ? { 'Content-Type': 'application/json' } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || `Request failed (${res.status})`);
+    }
+    if (res.status === 204) return null;
+    return res.json();
+  },
+
+  getProducts(activeOnly = false, ownerId = null) {
+    const params = new URLSearchParams();
+    if (activeOnly) params.set('active', '1');
+    if (ownerId) params.set('owner_id', ownerId);
+    const qs = params.toString();
+    return this.request('GET', `/api/products${qs ? `?${qs}` : ''}`);
+  },
+  createProduct(data) {
+    return this.request('POST', '/api/products', data);
+  },
+  updateProduct(id, data) {
+    return this.request('PUT', `/api/products/${id}`, data);
+  },
+  deleteProduct(id, actor, reason) {
+    return this.request('DELETE', `/api/products/${id}`, { actor, reason });
+  },
+  adjustStock(id, change, actor, reason) {
+    return this.request('POST', `/api/products/${id}/stock`, { change, actor, reason });
+  },
+  getProductHistory(id) {
+    return this.request('GET', `/api/products/${id}/history`);
+  },
+  getProductByBarcode(code) {
+    return this.request('GET', `/api/products/barcode/${encodeURIComponent(code)}`);
+  },
+  async uploadProductImage(id, file) {
+    const formData = new FormData();
+    formData.append('image', file);
+    const res = await fetch(`/api/products/${id}/image`, { method: 'POST', body: formData });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      throw new Error(data.error || `Request failed (${res.status})`);
+    }
+    return res.json();
+  },
+
+  createSale(payload) {
+    return this.request('POST', '/api/sales', payload);
+  },
+  getSales(from, to) {
+    const q = from && to ? `?from=${from}&to=${to}` : '';
+    return this.request('GET', `/api/sales${q}`);
+  },
+  getSale(id) {
+    return this.request('GET', `/api/sales/${id}`);
+  },
+  voidSale(id, action, actor, reason) {
+    return this.request('POST', `/api/sales/${id}/void`, { action, actor, reason });
+  },
+
+  getSummary(from, to) {
+    const q = from && to ? `?from=${from}&to=${to}` : '';
+    return this.request('GET', `/api/reports/summary${q}`);
+  },
+  getLowStock() {
+    return this.request('GET', '/api/reports/low-stock');
+  },
+
+  getSettings() {
+    return this.request('GET', '/api/settings');
+  },
+  updateSettings(data) {
+    return this.request('PUT', '/api/settings', data);
+  },
+
+  changePassword(currentPassword, newPassword) {
+    return this.request('PUT', '/api/auth/password', { currentPassword, newPassword });
+  },
+
+  getUsers() {
+    return this.request('GET', '/api/users');
+  },
+  createUser(data) {
+    return this.request('POST', '/api/users', data);
+  },
+  updateUser(id, data) {
+    return this.request('PUT', `/api/users/${id}`, data);
+  },
+  deleteUser(id, confirmPassword) {
+    return this.request('DELETE', `/api/users/${id}`, { confirmPassword });
+  },
+};
+
+function formatCurrency(n) {
+  return new Intl.NumberFormat('th-TH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+}
+
+function getDefaultActor() {
+  return localStorage.getItem('pos-staff-name') || '';
+}
+
+function setDefaultActor(name) {
+  if (name) localStorage.setItem('pos-staff-name', name);
+}
+
+function showToast(message) {
+  let toast = document.querySelector('.toast');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.className = 'toast';
+    document.body.appendChild(toast);
+  }
+  toast.textContent = message;
+  toast.classList.add('show');
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => toast.classList.remove('show'), 2200);
+}

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>เข้าสู่ระบบ · Mini POS</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/auth.css">
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('pos-theme') || 'light');</script>
+</head>
+<body>
+<div class="auth-page">
+  <div class="card auth-card">
+    <h1>Mini POS</h1>
+    <p class="muted">เข้าสู่ระบบเพื่อใช้งาน</p>
+
+    <p class="auth-error" id="authError"></p>
+
+    <form id="loginForm">
+      <div class="field">
+        <label>ชื่อผู้ใช้</label>
+        <input type="text" id="fieldUsername" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label>รหัสผ่าน</label>
+        <input type="password" id="fieldPassword" autocomplete="current-password" required>
+      </div>
+      <button type="submit" class="btn btn-primary btn-block">เข้าสู่ระบบ</button>
+    </form>
+  </div>
+</div>
+
+<script src="js/login.js"></script>
+</body>
+</html>

@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>รายงาน · Mini POS</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/reports.css">
+<link rel="stylesheet" href="css/auth.css">
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('pos-theme') || 'light');</script>
+<script src="js/auth.js"></script>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <h1>Mini POS</h1>
+    <div class="topbar-right">
+      <nav class="nav">
+        <a href="index.html">ขายสินค้า</a>
+        <a href="products.html">จัดการสินค้า</a>
+        <a href="orders.html">ประวัติการขาย</a>
+        <a href="reports.html" class="active">รายงาน</a>
+        <a href="settings.html">ตั้งค่าร้าน</a>
+      </nav>
+      <button class="theme-toggle" id="themeToggle" aria-label="สลับโหมดมืด/สว่าง"></button>
+    </div>
+  </header>
+
+  <div class="main">
+    <section class="reports-page scroll">
+      <div class="date-filter">
+        <div class="field">
+          <label>จากวันที่</label>
+          <input type="date" id="fromDate">
+        </div>
+        <div class="field">
+          <label>ถึงวันที่</label>
+          <input type="date" id="toDate">
+        </div>
+        <button class="btn btn-primary" id="applyFilter">ดูรายงาน</button>
+        <button class="btn btn-ghost" id="todayFilter">วันนี้</button>
+      </div>
+
+      <div class="summary-cards">
+        <div class="card summary-card">
+          <div class="summary-label">ยอดขายรวม</div>
+          <div class="summary-value" id="totalRevenue">฿0.00</div>
+        </div>
+        <div class="card summary-card">
+          <div class="summary-label">กำไรรวม</div>
+          <div class="summary-value summary-profit" id="totalProfit">฿0.00</div>
+        </div>
+        <div class="card summary-card">
+          <div class="summary-label">จำนวนออเดอร์</div>
+          <div class="summary-value" id="totalOrders">0</div>
+        </div>
+      </div>
+
+      <div class="card report-panel daily-panel">
+        <h3>สรุปยอดขาย-กำไรรายวัน</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>วันที่</th>
+              <th class="text-right">ออเดอร์</th>
+              <th class="text-right">ยอดขาย</th>
+              <th class="text-right">กำไร</th>
+            </tr>
+          </thead>
+          <tbody id="dailyBody"></tbody>
+        </table>
+        <p id="dailyEmpty" class="empty-state hidden">ไม่มีข้อมูลในช่วงเวลานี้</p>
+      </div>
+
+      <div class="report-grid">
+        <div class="card report-panel">
+          <h3>สินค้าขายดี</h3>
+          <table>
+            <thead>
+              <tr><th>สินค้า</th><th class="text-right">จำนวน</th><th class="text-right">ยอดขาย</th></tr>
+            </thead>
+            <tbody id="topProductsBody"></tbody>
+          </table>
+          <p id="topEmpty" class="empty-state hidden">ไม่มีข้อมูล</p>
+        </div>
+
+        <div class="card report-panel">
+          <h3>สินค้าใกล้หมด</h3>
+          <table>
+            <thead>
+              <tr><th>สินค้า</th><th class="text-right">คงเหลือ</th></tr>
+            </thead>
+            <tbody id="lowStockBody"></tbody>
+          </table>
+          <p id="lowStockEmpty" class="empty-state hidden">สต็อกสินค้าปกติทั้งหมด</p>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/reports.js"></script>
+</body>
+</html>

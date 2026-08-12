@@ -1,0 +1,250 @@
+let products = [];
+let cart = []; // { product_id, name, price, quantity, stock }
+
+const productGrid = document.getElementById('productGrid');
+const searchInput = document.getElementById('search');
+const cartItemsEl = document.getElementById('cartItems');
+const cartTotalEl = document.getElementById('cartTotal');
+const checkoutBtn = document.getElementById('checkoutBtn');
+const clearCartBtn = document.getElementById('clearCart');
+
+async function loadProducts() {
+  products = await api.getProducts(true);
+  renderProducts();
+}
+
+function renderProducts() {
+  const term = searchInput.value.trim().toLowerCase();
+  const filtered = products.filter(p => {
+    if (!term) return true;
+    return p.name.toLowerCase().includes(term) || (p.name_en || '').toLowerCase().includes(term);
+  });
+
+  if (filtered.length === 0) {
+    productGrid.innerHTML = '<p class="empty-state">ไม่พบสินค้า</p>';
+    return;
+  }
+
+  productGrid.innerHTML = filtered.map(p => `
+    <div class="product-card ${p.stock <= 0 ? 'out-of-stock' : ''}" data-id="${p.id}">
+      ${p.image
+        ? `<img class="p-image" src="${escapeHtml(p.image)}" alt="">`
+        : '<div class="p-image p-image-placeholder"></div>'}
+      <div class="p-name">${escapeHtml(p.name)}</div>
+      ${p.name_en ? `<div class="p-name-en">${escapeHtml(p.name_en)}</div>` : ''}
+      <div class="p-price">฿${formatCurrency(p.price)}</div>
+      <div class="p-stock">คงเหลือ ${p.stock}</div>
+    </div>
+  `).join('');
+
+  productGrid.querySelectorAll('.product-card').forEach(card => {
+    card.addEventListener('click', () => addToCart(Number(card.dataset.id)));
+  });
+}
+
+function addToCart(productId) {
+  const product = products.find(p => p.id === productId);
+  if (!product || product.stock <= 0) return;
+
+  const existing = cart.find(c => c.product_id === productId);
+  if (existing) {
+    if (existing.quantity >= product.stock) {
+      showToast('สินค้าคงเหลือไม่พอ');
+      return;
+    }
+    existing.quantity += 1;
+  } else {
+    cart.push({ product_id: product.id, name: product.name, price: product.price, image: product.image, quantity: 1, stock: product.stock });
+  }
+  renderCart();
+}
+
+function changeQty(productId, delta) {
+  const item = cart.find(c => c.product_id === productId);
+  if (!item) return;
+  const newQty = item.quantity + delta;
+  if (newQty <= 0) {
+    cart = cart.filter(c => c.product_id !== productId);
+  } else if (newQty > item.stock) {
+    showToast('สินค้าคงเหลือไม่พอ');
+    return;
+  } else {
+    item.quantity = newQty;
+  }
+  renderCart();
+}
+
+function cartTotal() {
+  return cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+}
+
+function renderCart() {
+  if (cart.length === 0) {
+    cartItemsEl.innerHTML = '<p class="empty-state">ยังไม่มีสินค้าในตะกร้า</p>';
+    checkoutBtn.disabled = true;
+  } else {
+    cartItemsEl.innerHTML = cart.map(item => `
+      <div class="cart-item" data-id="${item.product_id}">
+        ${item.image
+          ? `<img class="ci-image" src="${escapeHtml(item.image)}" alt="">`
+          : '<div class="ci-image ci-image-placeholder"></div>'}
+        <div class="flex-1">
+          <div class="ci-name">${escapeHtml(item.name)}</div>
+          <div class="ci-price">฿${formatCurrency(item.price)}</div>
+        </div>
+        <div class="qty-control">
+          <button class="qty-btn minus">−</button>
+          <span class="qty-value">${item.quantity}</span>
+          <button class="qty-btn plus">+</button>
+        </div>
+        <div class="ci-subtotal">฿${formatCurrency(item.price * item.quantity)}</div>
+      </div>
+    `).join('');
+
+    cartItemsEl.querySelectorAll('.cart-item').forEach(row => {
+      const id = Number(row.dataset.id);
+      row.querySelector('.minus').addEventListener('click', () => changeQty(id, -1));
+      row.querySelector('.plus').addEventListener('click', () => changeQty(id, 1));
+    });
+
+    checkoutBtn.disabled = false;
+  }
+  cartTotalEl.textContent = `฿${formatCurrency(cartTotal())}`;
+}
+
+clearCartBtn.addEventListener('click', () => {
+  cart = [];
+  renderCart();
+});
+
+searchInput.addEventListener('input', renderProducts);
+
+document.getElementById('scanCartBtn').addEventListener('click', () => {
+  Scanner.open({
+    continuous: true,
+    onScan: (code) => {
+      const product = products.find(p => p.barcode === code);
+      if (!product) {
+        showToast(`ไม่พบสินค้าบาร์โค้ด ${code}`);
+        return;
+      }
+      addToCart(product.id);
+      showToast(`เพิ่ม ${product.name} แล้ว`);
+    },
+  });
+});
+
+// Checkout modal
+const checkoutModal = document.getElementById('checkoutModal');
+const modalTotal = document.getElementById('modalTotal');
+const customerNameInput = document.getElementById('customerNameInput');
+const receivedInput = document.getElementById('receivedInput');
+const changeAmountEl = document.getElementById('changeAmount');
+const confirmCheckoutBtn = document.getElementById('confirmCheckout');
+
+checkoutBtn.addEventListener('click', () => {
+  modalTotal.textContent = `฿${formatCurrency(cartTotal())}`;
+  customerNameInput.value = '';
+  receivedInput.value = '';
+  changeAmountEl.textContent = '฿0.00';
+  checkoutModal.classList.remove('hidden');
+  receivedInput.focus();
+});
+
+document.getElementById('cancelCheckout').addEventListener('click', () => {
+  checkoutModal.classList.add('hidden');
+});
+
+document.querySelectorAll('.quick-cash-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const amount = btn.dataset.amount;
+    receivedInput.value = amount === 'exact' ? cartTotal().toFixed(2) : amount;
+    updateChange();
+  });
+});
+
+receivedInput.addEventListener('input', updateChange);
+
+function updateChange() {
+  const received = parseFloat(receivedInput.value) || 0;
+  const change = received - cartTotal();
+  changeAmountEl.textContent = `฿${formatCurrency(change)}`;
+}
+
+confirmCheckoutBtn.addEventListener('click', async () => {
+  const received = parseFloat(receivedInput.value) || 0;
+  if (received < cartTotal()) {
+    showToast('รับเงินไม่พอ');
+    return;
+  }
+  confirmCheckoutBtn.disabled = true;
+  try {
+    const payload = {
+      items: cart.map(c => ({ product_id: c.product_id, quantity: c.quantity })),
+      payment_method: 'cash',
+      received_amount: received,
+      customer_name: customerNameInput.value.trim() || null,
+    };
+    const sale = await api.createSale(payload);
+    checkoutModal.classList.add('hidden');
+    showReceipt(sale);
+    cart = [];
+    renderCart();
+    await loadProducts();
+  } catch (err) {
+    showToast(err.message);
+  } finally {
+    confirmCheckoutBtn.disabled = false;
+  }
+});
+
+const receiptModal = document.getElementById('receiptModal');
+const receiptBody = document.getElementById('receiptBody');
+let lastSaleId = null;
+
+function showReceipt(sale) {
+  lastSaleId = sale.id;
+  receiptBody.innerHTML = `
+    ${sale.customer_name ? `
+      <div class="receipt-line">
+        <span>ลูกค้า</span>
+        <span>${escapeHtml(sale.customer_name)}</span>
+      </div>
+    ` : ''}
+    ${sale.items.map(item => `
+      <div class="receipt-line">
+        <span>${escapeHtml(item.name)} × ${item.quantity}</span>
+        <span>฿${formatCurrency(item.subtotal)}</span>
+      </div>
+    `).join('')}
+    <div class="receipt-line" style="font-weight:700; margin-top:8px;">
+      <span>ยอดรวม</span>
+      <span>฿${formatCurrency(sale.total)}</span>
+    </div>
+    <div class="receipt-line">
+      <span>รับเงิน</span>
+      <span>฿${formatCurrency(sale.received_amount)}</span>
+    </div>
+    <div class="receipt-line">
+      <span>เงินทอน</span>
+      <span>฿${formatCurrency(sale.change_amount)}</span>
+    </div>
+  `;
+  receiptModal.classList.remove('hidden');
+}
+
+document.getElementById('closeReceipt').addEventListener('click', () => {
+  receiptModal.classList.add('hidden');
+});
+
+document.getElementById('printReceipt').addEventListener('click', () => {
+  window.open(`receipt.html?id=${lastSaleId}&from=pos`, '_blank');
+});
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+loadProducts();

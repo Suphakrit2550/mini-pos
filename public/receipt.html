@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ใบเสร็จ · Mini POS</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/receipt.css">
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('pos-theme') || 'light');</script>
+<script src="js/auth.js"></script>
+</head>
+<body>
+<div class="toolbar no-print">
+  <button class="btn btn-ghost" id="backBtn">← กลับ</button>
+  <button class="btn btn-primary" id="printBtn">พิมพ์ใบเสร็จ</button>
+</div>
+
+<div id="receiptRoot" class="receipt-wrap">
+  <p class="loading no-print">กำลังโหลด...</p>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/receipt.js"></script>
+</body>
+</html>

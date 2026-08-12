@@ -1,0 +1,36 @@
+// Terminal-based password recovery. There is no email/SMS in this app to
+// verify identity for a "forgot password" flow, so recovery instead relies
+// on physical access to this Mac (running this script IS the proof of
+// ownership) — same trust boundary the rest of the local-only app relies on.
+const readline = require('readline');
+const db = require('../server/db');
+const { hashPassword } = require('../server/lib/auth');
+
+const username = process.argv[2];
+
+if (!username) {
+  console.error('Usage: npm run reset-password -- <username>');
+  const users = db.prepare('SELECT username FROM users').all();
+  if (users.length) {
+    console.error('Existing accounts: ' + users.map((u) => u.username).join(', '));
+  }
+  process.exit(1);
+}
+
+const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
+if (!user) {
+  console.error(`No account named "${username}".`);
+  process.exit(1);
+}
+
+const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+rl.question('New password (at least 6 characters): ', (password) => {
+  rl.close();
+  if (!password || password.length < 6) {
+    console.error('Password must be at least 6 characters.');
+    process.exit(1);
+  }
+  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hashPassword(password), user.id);
+  db.prepare('DELETE FROM sessions WHERE user_id = ?').run(user.id);
+  console.log(`Password for "${username}" has been reset. All existing sessions were signed out.`);
+});
