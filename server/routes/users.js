@@ -1,3 +1,5 @@
+// จัดการบัญชีผู้ใช้ (admin เท่านั้น)
+
 const express = require('express');
 const db = require('../db');
 const { hashPassword, verifyPassword } = require('../lib/auth');

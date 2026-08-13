@@ -1,3 +1,8 @@
+// auth.js — ระบบยืนยันตัวตน (หัวใจของระบบ login)
+// - hashPassword() / verifyPassword() — เข้ารหัสรหัสผ่านแบบ scrypt+salt (ไม่เก็บ plain text) และเทียบรหัสตอนล็อกอิน
+// - createSession() / getSessionUser() / deleteSession() — สร้าง/ตรวจสอบ/ลบ session ตอนล็อกอิน-เอาต์ (เก็บเป็น token ในคุกกี้)
+// - parseCookies() — แกะคุกกี้จาก request เอง (ไม่ได้ใช้ library เสริมอย่าง cookie-parser)
+
 const crypto = require('crypto');
 const db = require('../db');
 

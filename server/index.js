@@ -1,3 +1,5 @@
+// เซิร์ฟเวอร์หลัก เปิด HTTP+HTTPS, ป้องกัน API ทุกเส้นด้วย login │
+
 const express = require('express');
 const path = require('path');
 const http = require('http');

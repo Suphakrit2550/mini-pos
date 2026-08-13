@@ -1,3 +1,5 @@
+// API ตั้งค่าร้าน
+
 const express = require('express');
 const db = require('../db');
 
