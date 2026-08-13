@@ -1,3 +1,7 @@
+// ไฟล์นี้ทำหน้าที่: หน้าตั้งค่าร้านค้า (settings.html)
+// - โหลด/บันทึกข้อมูลร้าน (ชื่อร้าน, ที่อยู่, เบอร์โทร, ข้อความท้ายใบเสร็จ) ผ่าน API /api/settings
+// - ฟอร์มเปลี่ยนรหัสผ่านของผู้ใช้ที่ล็อกอินอยู่ ผ่าน API changePassword
+
 const fields = {
   shopName: document.getElementById('fieldShopName'),
   address: document.getElementById('fieldAddress'),

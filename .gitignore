@@ -1,12 +1,26 @@
+# โฟลเดอร์ dependency ของ Node.js (ติดตั้งใหม่ได้ด้วย npm install ไม่ต้อง commit)
 node_modules/
+
+# ไฟล์ฐานข้อมูล SQLite และไฟล์ log/temp ของมัน (ข้อมูลจริงของแต่ละเครื่อง ไม่ควรแชร์ผ่าน git)
 server/data/*.db
 server/data/*.db-journal
 server/data/*.db-wal
 server/data/*.db-shm
+
+# ไฟล์ certificate (CA key/cert) ที่ server สร้างขึ้นเองสำหรับ HTTPS ในเครื่อง
 server/data/ca-key.pem
 server/data/ca-cert.pem
+
+# ไฟล์ระบบของ macOS ที่ Finder สร้างอัตโนมัติ
 .DS_Store
+
+# ไฟล์ที่ผู้ใช้อัปโหลด (เช่นรูปสินค้า) ไม่ต้อง commit เข้า repo
 public/uploads/*
+# ยกเว้นไฟล์ .gitkeep เพื่อให้โฟลเดอร์ uploads ยังอยู่ใน git แม้จะว่างเปล่า
 !public/uploads/.gitkeep
+
+# โฟลเดอร์เก็บ log ของแอป
 logs/
+
+# การตั้งค่า Claude Code เฉพาะเครื่อง ไม่ควรแชร์ร่วมกับคนอื่น
 .claude/settings.local.json

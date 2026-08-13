@@ -1,3 +1,7 @@
+// ไฟล์นี้ทำหน้าที่: หน้ารายงานยอดขาย (reports.html)
+// - เลือกช่วงวันที่ แล้วดึงสรุปยอดขาย/กำไร/จำนวนออเดอร์ ยอดขายรายวัน และสินค้าขายดี จาก API /api/reports/summary
+// - แสดงรายการสินค้าที่ใกล้หมดสต็อกจาก /api/reports/low-stock
+
 const fromDateInput = document.getElementById('fromDate');
 const toDateInput = document.getElementById('toDate');
 

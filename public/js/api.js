@@ -1,3 +1,8 @@
+// ไฟล์นี้ทำหน้าที่: ศูนย์รวมฟังก์ชันเรียก API ทั้งหมดของฝั่งหน้าเว็บ (ต้องโหลดก่อนไฟล์อื่นๆ)
+// - object `api` มีเมธอดครบทุกอย่าง เช่น สินค้า, การขาย, รายงาน, ตั้งค่า, ผู้ใช้ ที่ยิง fetch ไปยัง server
+// - มีฟังก์ชันช่วยเหลือทั่วไปที่หน้าอื่นเรียกใช้ได้: formatCurrency (จัดรูปแบบตัวเลขเงิน),
+//   getDefaultActor/setDefaultActor (จำชื่อพนักงานล่าสุดไว้ใน localStorage), showToast (ข้อความแจ้งเตือนเด้งล่าง)
+
 const api = {
   async request(method, url, body) {
     const res = await fetch(url, {

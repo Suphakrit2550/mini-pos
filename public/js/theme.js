@@ -1,3 +1,7 @@
+// ไฟล์นี้ทำหน้าที่: สลับโหมดธีมสว่าง/มืด (light/dark) ของหน้าเว็บ
+// เมื่อกดปุ่ม จะสลับ attribute data-theme บน <html> และจำค่าไว้ใน localStorage
+// เพื่อให้เปิดหน้าเว็บครั้งต่อไปแล้วยังใช้ธีมเดิม พร้อมเปลี่ยนไอคอนปุ่ม (🌙/☀️) ตามธีม
+
 const themeToggleBtn = document.getElementById('themeToggle');
 
 function applyThemeIcon() {

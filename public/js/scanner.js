@@ -1,6 +1,8 @@
-// Shared barcode scanner overlay, built on the vendored html5-qrcode
-// library. Injects its own modal markup so any page can call
-// Scanner.open({ onScan, continuous }) without adding HTML manually.
+// ไฟล์นี้ทำหน้าที่: ตัวช่วยเปิดกล้องสแกนบาร์โค้ด ใช้ร่วมกันได้ทุกหน้า
+// (สร้างจาก library html5-qrcode ที่แปะไว้ใน public/vendor/)
+// - สร้างหน้าต่าง (modal) สแกนบาร์โค้ดขึ้นมาเองอัตโนมัติ ไม่ต้องเขียน HTML เพิ่ม
+// - เรียกใช้งานง่ายๆ ด้วย Scanner.open({ onScan, continuous }) แล้วปิดด้วย Scanner.close()
+//   - continuous: false = สแกนได้ทีเดียวแล้วปิดกล้องเอง, true = สแกนต่อเนื่องได้เรื่อยๆ
 const Scanner = (() => {
   let html5Qrcode = null;
   let onDetect = null;

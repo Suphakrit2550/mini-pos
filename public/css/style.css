@@ -1,3 +1,9 @@
+/*
+ * ไฟล์นี้ทำหน้าที่: สไตล์หลักที่ใช้ร่วมกันทุกหน้าของเว็บ (โหลดก่อน css เฉพาะหน้าอื่นๆ เสมอ)
+ * - กำหนดตัวแปรสี/ระยะห่าง (--bg, --surface, --accent ฯลฯ) ทั้งโหมดสว่างและมืด (data-theme="dark")
+ * - สไตล์พื้นฐานของ layout, ปุ่ม, ฟอร์ม, การ์ด, แถบเมนู, badge, modal, toast ที่ใช้ซ้ำได้ทุกหน้า
+ */
+
 @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&display=swap');
 
 :root {

@@ -1,3 +1,8 @@
+// ไฟล์นี้ทำหน้าที่: หน้ารายการออเดอร์/บิลขาย (orders.html)
+// - แสดงรายการบิลตามช่วงวันที่ที่เลือก พร้อมสถานะ (สำเร็จ/ยกเลิก/คืนเงิน)
+// - เปิดหน้าต่างดูรายละเอียดบิล พร้อมประวัติการแก้ไข (audit log)
+// - มีปุ่มยกเลิกออเดอร์และคืนเงิน ที่ต้องกรอกชื่อผู้ดำเนินการและเหตุผลก่อนยืนยัน
+
 const fromDateInput = document.getElementById('fromDate');
 const toDateInput = document.getElementById('toDate');
 const tableBody = document.getElementById('ordersTableBody');

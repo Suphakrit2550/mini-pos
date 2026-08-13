@@ -1,3 +1,5 @@
+// ฐานข้อมูล SQLite — ตารางสินค้า, ยอดขาย, ผู้ใช้, session ฯลฯ │
+
 const path = require('path');
 const Database = require('better-sqlite3');
 

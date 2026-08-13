@@ -1,3 +1,7 @@
+// ไฟล์นี้ทำหน้าที่: หน้าตั้งค่าเริ่มต้นระบบ (setup.html) สำหรับสร้างบัญชีแอดมินคนแรก
+// - ถ้าระบบมีผู้ใช้อยู่แล้ว จะเด้งไปหน้า login หรือหน้าแรกทันที (ไม่ให้ setup ซ้ำ)
+// - ตรวจสอบว่ารหัสผ่านที่กรอกสองช่องตรงกัน ก่อนส่งไปสร้างบัญชีผ่าน API /api/auth/setup
+
 const errorBox = document.getElementById('authError');
 
 function showAuthError(message) {
