@@ -73,7 +73,14 @@ router.get('/:id', asyncHandler(async (req, res) => {
   if (!ownsSale(req, sale)) return res.status(403).json({ error: 'ไม่มีสิทธิ์เข้าถึงรายการนี้' });
   const { rows: items } = await db.query('SELECT * FROM sale_items WHERE sale_id = $1', [req.params.id]);
   const audit = await getAuditLog('sale', Number(req.params.id));
-  res.json({ ...serializeSale(sale), items: items.map(serializeItem), audit });
+  // Receipts always show the selling account's own shop info — not the
+  // viewer's — since each account is its own separate shop. Relevant when
+  // an admin looks up a receipt for a sale a staff account made.
+  const { rows: [shop] } = await db.query(
+    'SELECT shop_name, address, phone, receipt_footer FROM settings WHERE user_id = $1',
+    [sale.user_id]
+  );
+  res.json({ ...serializeSale(sale), items: items.map(serializeItem), audit, shop });
 }));
 
 router.post('/', asyncHandler(async (req, res) => {

@@ -142,9 +142,11 @@ const SCHEMA = `
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
   );
 
-  -- Single-row table with shop info shown on printed receipts.
+  -- Shop info shown on printed receipts — one row per account, not one
+  -- shop-wide row, so each account's catalog reads as its own separate shop
+  -- (matches how products/sales are already scoped per owner).
   CREATE TABLE IF NOT EXISTS settings (
-    id INTEGER PRIMARY KEY CHECK (id = 1),
+    user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     shop_name TEXT NOT NULL DEFAULT 'Mini POS',
     address TEXT,
     phone TEXT,
@@ -152,11 +154,41 @@ const SCHEMA = `
   );
 `;
 
-async function initSchema() {
-  await pool.query(SCHEMA);
-  await pool.query(
-    `INSERT INTO settings (id, shop_name) VALUES (1, 'Mini POS') ON CONFLICT (id) DO NOTHING`
+// settings used to be a single shop-wide row (id=1, CHECK id=1) from before
+// per-account catalogs existed. If that old shape is still there, carry its
+// values forward as every current account's starting point, then drop it so
+// the per-account table above can be created fresh. No-op once migrated.
+async function migrateSettingsToPerAccount() {
+  const { rows: cols } = await pool.query(
+    `SELECT column_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = 'settings'`
   );
+  const columnNames = cols.map((c) => c.column_name);
+  if (columnNames.length === 0 || columnNames.includes('user_id')) return;
+
+  const { rows: [old] } = await pool.query('SELECT shop_name, address, phone, receipt_footer FROM settings WHERE id = 1');
+  await pool.query('DROP TABLE settings');
+  await pool.query(`
+    CREATE TABLE settings (
+      user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+      shop_name TEXT NOT NULL DEFAULT 'Mini POS',
+      address TEXT,
+      phone TEXT,
+      receipt_footer TEXT
+    )
+  `);
+  if (old) {
+    await pool.query(
+      `INSERT INTO settings (user_id, shop_name, address, phone, receipt_footer)
+       SELECT id, $1, $2, $3, $4 FROM users
+       ON CONFLICT (user_id) DO NOTHING`,
+      [old.shop_name, old.address, old.phone, old.receipt_footer]
+    );
+  }
+}
+
+async function initSchema() {
+  await migrateSettingsToPerAccount();
+  await pool.query(SCHEMA);
 }
 
 module.exports = { pool, query, initSchema };

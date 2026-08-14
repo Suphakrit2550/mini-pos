@@ -24,8 +24,8 @@ async function loadReceipt() {
   }
 
   try {
-    const [sale, settings] = await Promise.all([api.getSale(id), api.getSettings()]);
-    renderReceipt(sale, settings);
+    const sale = await api.getSale(id);
+    renderReceipt(sale, sale.shop || {});
   } catch (err) {
     receiptRoot.innerHTML = `<p class="loading">${escapeHtml(err.message)}</p>`;
   }
