@@ -24,3 +24,7 @@ logs/
 
 # การตั้งค่า Claude Code เฉพาะเครื่อง ไม่ควรแชร์ร่วมกับคนอื่น
 .claude/settings.local.json
+
+# ไฟล์ environment variables ที่มีรหัสผ่าน/ข้อมูลลับ (เช่น connection string ของฐานข้อมูล)
+.env
+.env.*

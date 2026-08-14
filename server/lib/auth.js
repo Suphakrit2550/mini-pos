@@ -22,27 +22,29 @@ function verifyPassword(password, stored) {
   return check.length === expected.length && crypto.timingSafeEqual(check, expected);
 }
 
-function createSession(userId) {
+async function createSession(userId) {
   const token = crypto.randomBytes(32).toString('hex');
-  const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000).toISOString();
-  db.prepare('INSERT INTO sessions (token, user_id, expires_at) VALUES (?, ?, ?)').run(token, userId, expiresAt);
+  const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
+  await db.query('INSERT INTO sessions (token, user_id, expires_at) VALUES ($1, $2, $3)', [token, userId, expiresAt]);
   return token;
 }
 
-function getSessionUser(token) {
+async function getSessionUser(token) {
   if (!token) return null;
   // Deactivated accounts lose access immediately even if a session row
   // survives (deactivation also deletes their sessions directly, but this
   // is the backstop that matters if that step is ever skipped).
-  return db.prepare(`
-    SELECT users.id, users.username, users.role FROM sessions
-    JOIN users ON users.id = sessions.user_id
-    WHERE sessions.token = ? AND sessions.expires_at > datetime('now') AND users.active = 1
-  `).get(token) || null;
+  const { rows } = await db.query(
+    `SELECT users.id, users.username, users.role FROM sessions
+     JOIN users ON users.id = sessions.user_id
+     WHERE sessions.token = $1 AND sessions.expires_at > NOW() AND users.active = TRUE`,
+    [token]
+  );
+  return rows[0] || null;
 }
 
-function deleteSession(token) {
-  db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+async function deleteSession(token) {
+  await db.query('DELETE FROM sessions WHERE token = $1', [token]);
 }
 
 function parseCookies(req) {

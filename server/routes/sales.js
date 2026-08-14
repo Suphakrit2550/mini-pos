@@ -2,6 +2,7 @@
 
 const express = require('express');
 const db = require('../db');
+const asyncHandler = require('../lib/asyncHandler');
 const { toSatang, toBaht } = require('../lib/money');
 const { logAudit, getAuditLog } = require('../lib/audit');
 
@@ -32,16 +33,16 @@ function serializeItem(row) {
 // default (a shop-wide view), or one account's via ?user_id=.
 function salesScopeFilter(req) {
   if (req.user.role === 'admin') {
-    return req.query.user_id ? { clause: 'user_id = ?', params: [Number(req.query.user_id)] } : null;
+    return req.query.user_id ? { clause: 'user_id = ', value: Number(req.query.user_id) } : null;
   }
-  return { clause: 'user_id = ?', params: [req.user.id] };
+  return { clause: 'user_id = ', value: req.user.id };
 }
 
 function ownsSale(req, sale) {
   return req.user.role === 'admin' || sale.user_id === req.user.id;
 }
 
-router.get('/', (req, res) => {
+router.get('/', asyncHandler(async (req, res) => {
   const { from, to } = req.query;
   const itemCount = `(SELECT COUNT(*) FROM sale_items WHERE sale_items.sale_id = sales.id) AS item_count`;
   const scope = salesScopeFilter(req);
@@ -49,41 +50,43 @@ router.get('/', (req, res) => {
   const conditions = [];
   const params = [];
   if (from && to) {
-    conditions.push('date(created_at) BETWEEN date(?) AND date(?)');
     params.push(from, to);
+    conditions.push(`created_at::date BETWEEN $${params.length - 1}::date AND $${params.length}::date`);
   }
   if (scope) {
-    conditions.push(scope.clause);
-    params.push(...scope.params);
+    params.push(scope.value);
+    conditions.push(`${scope.clause}$${params.length}`);
   }
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   const limit = from && to ? '' : 'LIMIT 200';
 
-  const rows = db.prepare(`
-    SELECT sales.*, ${itemCount} FROM sales
-    ${where}
-    ORDER BY created_at DESC ${limit}
-  `).all(...params);
+  const { rows } = await db.query(
+    `SELECT sales.*, ${itemCount} FROM sales ${where} ORDER BY created_at DESC ${limit}`,
+    params
+  );
   res.json(rows.map(serializeSale));
-});
+}));
 
-router.get('/:id', (req, res) => {
-  const sale = db.prepare('SELECT * FROM sales WHERE id = ?').get(req.params.id);
+router.get('/:id', asyncHandler(async (req, res) => {
+  const { rows: [sale] } = await db.query('SELECT * FROM sales WHERE id = $1', [req.params.id]);
   if (!sale) return res.status(404).json({ error: 'Sale not found' });
   if (!ownsSale(req, sale)) return res.status(403).json({ error: 'ไม่มีสิทธิ์เข้าถึงรายการนี้' });
-  const items = db.prepare('SELECT * FROM sale_items WHERE sale_id = ?').all(req.params.id);
-  const audit = getAuditLog('sale', Number(req.params.id));
+  const { rows: items } = await db.query('SELECT * FROM sale_items WHERE sale_id = $1', [req.params.id]);
+  const audit = await getAuditLog('sale', Number(req.params.id));
   res.json({ ...serializeSale(sale), items: items.map(serializeItem), audit });
-});
+}));
 
-router.post('/', (req, res) => {
+router.post('/', asyncHandler(async (req, res) => {
   const { items, received_amount, customer_name } = req.body;
   const payment_method = req.body.payment_method || 'cash';
   if (!Array.isArray(items) || items.length === 0) {
     return res.status(400).json({ error: 'items are required' });
   }
 
-  const tx = db.transaction(() => {
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+
     let totalSatang = 0;
     const resolvedItems = [];
 
@@ -91,7 +94,10 @@ router.post('/', (req, res) => {
       // Scoped to the seller's own catalog — a sale can only ring up items
       // that account actually stocks, even if another account's product id
       // is guessed.
-      const product = db.prepare('SELECT * FROM products WHERE id = ? AND owner_id = ?').get(item.product_id, req.user.id);
+      const { rows: [product] } = await client.query(
+        'SELECT * FROM products WHERE id = $1 AND owner_id = $2',
+        [item.product_id, req.user.id]
+      );
       if (!product) throw new Error(`Product ${item.product_id} not found`);
       if (product.stock < item.quantity) {
         throw new Error(`Insufficient stock for ${product.name}`);
@@ -113,40 +119,43 @@ router.post('/', (req, res) => {
       : null;
     const changeSatang = receivedSatang != null ? receivedSatang - totalSatang : null;
 
-    const saleInfo = db.prepare(`
-      INSERT INTO sales (user_id, customer_name, total_satang, payment_method, received_amount_satang, change_amount_satang)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).run(req.user.id, customer_name || null, totalSatang, payment_method || 'cash', receivedSatang, changeSatang);
-
-    const saleId = saleInfo.lastInsertRowid;
-
-    const insertItem = db.prepare(`
-      INSERT INTO sale_items (sale_id, product_id, name, price_satang, cost_satang, quantity, subtotal_satang)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `);
-    const updateStock = db.prepare("UPDATE products SET stock = stock - ?, updated_at = datetime('now', 'localtime') WHERE id = ?");
-    const logMovement = db.prepare("INSERT INTO stock_movements (product_id, change, reason) VALUES (?, ?, 'sale')");
+    const { rows: [saleRow] } = await client.query(
+      `INSERT INTO sales (user_id, customer_name, total_satang, payment_method, received_amount_satang, change_amount_satang)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
+      [req.user.id, customer_name || null, totalSatang, payment_method || 'cash', receivedSatang, changeSatang]
+    );
+    const saleId = saleRow.id;
 
     for (const item of resolvedItems) {
-      insertItem.run(saleId, item.product_id, item.name, item.price_satang, item.cost_satang, item.quantity, item.subtotal_satang);
-      updateStock.run(item.quantity, item.product_id);
-      logMovement.run(item.product_id, -item.quantity);
+      await client.query(
+        `INSERT INTO sale_items (sale_id, product_id, name, price_satang, cost_satang, quantity, subtotal_satang)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+        [saleId, item.product_id, item.name, item.price_satang, item.cost_satang, item.quantity, item.subtotal_satang]
+      );
+      await client.query(
+        "UPDATE products SET stock = stock - $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2",
+        [item.quantity, item.product_id]
+      );
+      await client.query(
+        "INSERT INTO stock_movements (product_id, change, reason) VALUES ($1, $2, 'sale')",
+        [item.product_id, -item.quantity]
+      );
     }
 
-    return saleId;
-  });
+    await client.query('COMMIT');
 
-  try {
-    const saleId = tx();
-    const sale = db.prepare('SELECT * FROM sales WHERE id = ?').get(saleId);
-    const savedItems = db.prepare('SELECT * FROM sale_items WHERE sale_id = ?').all(saleId);
+    const { rows: [sale] } = await client.query('SELECT * FROM sales WHERE id = $1', [saleId]);
+    const { rows: savedItems } = await client.query('SELECT * FROM sale_items WHERE sale_id = $1', [saleId]);
     res.status(201).json({ ...serializeSale(sale), items: savedItems.map(serializeItem) });
   } catch (err) {
+    await client.query('ROLLBACK');
     res.status(400).json({ error: err.message });
+  } finally {
+    client.release();
   }
-});
+}));
 
-router.post('/:id/void', (req, res) => {
+router.post('/:id/void', asyncHandler(async (req, res) => {
   const { action, actor, reason } = req.body;
   if (!['cancel', 'refund'].includes(action)) {
     return res.status(400).json({ error: 'action must be "cancel" or "refund"' });
@@ -156,7 +165,7 @@ router.post('/:id/void', (req, res) => {
   if (!actorName) return res.status(400).json({ error: 'actor is required' });
   if (!reasonText) return res.status(400).json({ error: 'reason is required' });
 
-  const sale = db.prepare('SELECT * FROM sales WHERE id = ?').get(req.params.id);
+  const { rows: [sale] } = await db.query('SELECT * FROM sales WHERE id = $1', [req.params.id]);
   if (!sale) return res.status(404).json({ error: 'Sale not found' });
   if (!ownsSale(req, sale)) return res.status(403).json({ error: 'ไม่มีสิทธิ์เข้าถึงรายการนี้' });
   if (sale.status !== 'completed') {
@@ -165,38 +174,52 @@ router.post('/:id/void', (req, res) => {
 
   const newStatus = action === 'cancel' ? 'cancelled' : 'refunded';
 
-  const tx = db.transaction(() => {
-    const items = db.prepare('SELECT * FROM sale_items WHERE sale_id = ?').all(sale.id);
-    const restoreStock = db.prepare("UPDATE products SET stock = stock + ?, updated_at = datetime('now', 'localtime') WHERE id = ?");
-    const logMovement = db.prepare('INSERT INTO stock_movements (product_id, change, reason) VALUES (?, ?, ?)');
+  const client = await db.pool.connect();
+  let voidedItems;
+  try {
+    await client.query('BEGIN');
+    const { rows: items } = await client.query('SELECT * FROM sale_items WHERE sale_id = $1', [sale.id]);
+    voidedItems = items;
 
     for (const item of items) {
       if (item.product_id) {
-        restoreStock.run(item.quantity, item.product_id);
-        logMovement.run(item.product_id, item.quantity, `${action}:${reasonText}`);
+        await client.query(
+          'UPDATE products SET stock = stock + $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2',
+          [item.quantity, item.product_id]
+        );
+        await client.query(
+          'INSERT INTO stock_movements (product_id, change, reason) VALUES ($1, $2, $3)',
+          [item.product_id, item.quantity, `${action}:${reasonText}`]
+        );
       }
     }
 
-    db.prepare(`
-      UPDATE sales SET status = ?, voided_at = datetime('now', 'localtime'), voided_reason = ?, voided_by = ?
-      WHERE id = ?
-    `).run(newStatus, reasonText, actorName, sale.id);
+    await client.query(
+      `UPDATE sales SET status = $1, voided_at = CURRENT_TIMESTAMP, voided_reason = $2, voided_by = $3
+       WHERE id = $4`,
+      [newStatus, reasonText, actorName, sale.id]
+    );
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 
-    logAudit({
-      entityType: 'sale',
-      entityId: sale.id,
-      action,
-      actor: actorName,
-      reason: reasonText,
-      detail: { total: toBaht(sale.total_satang), items: items.map(i => ({ name: i.name, quantity: i.quantity })) },
-    });
+  await logAudit({
+    entityType: 'sale',
+    entityId: sale.id,
+    action,
+    actor: actorName,
+    reason: reasonText,
+    detail: { total: toBaht(sale.total_satang), items: voidedItems.map((i) => ({ name: i.name, quantity: i.quantity })) },
   });
-  tx();
 
-  const updated = db.prepare('SELECT * FROM sales WHERE id = ?').get(sale.id);
-  const items = db.prepare('SELECT * FROM sale_items WHERE sale_id = ?').all(sale.id);
-  const audit = getAuditLog('sale', sale.id);
+  const { rows: [updated] } = await db.query('SELECT * FROM sales WHERE id = $1', [sale.id]);
+  const { rows: items } = await db.query('SELECT * FROM sale_items WHERE sale_id = $1', [sale.id]);
+  const audit = await getAuditLog('sale', sale.id);
   res.json({ ...serializeSale(updated), items: items.map(serializeItem), audit });
-});
+}));
 
 module.exports = router;

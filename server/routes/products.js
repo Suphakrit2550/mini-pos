@@ -6,6 +6,7 @@ const path = require('path');
 const crypto = require('crypto');
 const multer = require('multer');
 const db = require('../db');
+const asyncHandler = require('../lib/asyncHandler');
 const { toSatang, toBaht } = require('../lib/money');
 const { logAudit, getAuditLog } = require('../lib/audit');
 
@@ -58,7 +59,7 @@ const FIELD_LABELS = {
 };
 
 function isUniqueConstraintError(err) {
-  return err && err.code === 'SQLITE_CONSTRAINT_UNIQUE';
+  return err && err.code === '23505';
 }
 
 // Staff always act on their own catalog. Admins act on their own catalog by
@@ -74,63 +75,63 @@ function ownsProduct(req, product) {
   return req.user.role === 'admin' || product.owner_id === req.user.id;
 }
 
-router.get('/', (req, res) => {
+router.get('/', asyncHandler(async (req, res) => {
   const ownerId = resolveOwnerId(req);
   const { active } = req.query;
-  let rows;
-  if (active === '1') {
-    rows = db.prepare('SELECT * FROM products WHERE owner_id = ? AND active = 1 ORDER BY name').all(ownerId);
-  } else {
-    rows = db.prepare('SELECT * FROM products WHERE owner_id = ? ORDER BY name').all(ownerId);
-  }
+  const { rows } = active === '1'
+    ? await db.query('SELECT * FROM products WHERE owner_id = $1 AND active = TRUE ORDER BY name', [ownerId])
+    : await db.query('SELECT * FROM products WHERE owner_id = $1 ORDER BY name', [ownerId]);
   res.json(rows.map(serializeProduct));
-});
+}));
 
-router.get('/:id', (req, res) => {
-  const row = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
+router.get('/:id', asyncHandler(async (req, res) => {
+  const { rows: [row] } = await db.query('SELECT * FROM products WHERE id = $1', [req.params.id]);
   if (!row) return res.status(404).json({ error: 'Product not found' });
   if (!ownsProduct(req, row)) return res.status(403).json({ error: 'ไม่มีสิทธิ์เข้าถึงสินค้านี้' });
   res.json(serializeProduct(row));
-});
+}));
 
-router.get('/:id/history', (req, res) => {
-  const existing = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
+router.get('/:id/history', asyncHandler(async (req, res) => {
+  const { rows: [existing] } = await db.query('SELECT * FROM products WHERE id = $1', [req.params.id]);
   if (!existing) return res.status(404).json({ error: 'Product not found' });
   if (!ownsProduct(req, existing)) return res.status(403).json({ error: 'ไม่มีสิทธิ์เข้าถึงสินค้านี้' });
-  res.json(getAuditLog('product', Number(req.params.id)));
-});
+  res.json(await getAuditLog('product', Number(req.params.id)));
+}));
 
-router.get('/barcode/:code', (req, res) => {
+router.get('/barcode/:code', asyncHandler(async (req, res) => {
   const ownerId = resolveOwnerId(req);
-  const row = db.prepare('SELECT * FROM products WHERE barcode = ? AND owner_id = ? AND active = 1').get(req.params.code, ownerId);
+  const { rows: [row] } = await db.query(
+    'SELECT * FROM products WHERE barcode = $1 AND owner_id = $2 AND active = TRUE',
+    [req.params.code, ownerId]
+  );
   if (!row) return res.status(404).json({ error: 'ไม่พบสินค้าที่มีบาร์โค้ดนี้' });
   res.json(serializeProduct(row));
-});
+}));
 
-router.post('/', (req, res) => {
+router.post('/', asyncHandler(async (req, res) => {
   const { name, name_en, sku, category, barcode, price, cost, stock, low_stock_threshold, image } = req.body;
   if (!name || price === undefined) {
     return res.status(400).json({ error: 'name and price are required' });
   }
-  const stmt = db.prepare(`
-    INSERT INTO products (owner_id, name, name_en, sku, category, barcode, price_satang, cost_satang, stock, low_stock_threshold, image)
-    VALUES (@owner_id, @name, @name_en, @sku, @category, @barcode, @price_satang, @cost_satang, @stock, @low_stock_threshold, @image)
-  `);
   try {
-    const info = stmt.run({
-      owner_id: resolveOwnerId(req),
-      name,
-      name_en: name_en || null,
-      sku: sku || null,
-      category: category || null,
-      barcode: barcode || null,
-      price_satang: toSatang(price),
-      cost_satang: toSatang(cost || 0),
-      stock: stock || 0,
-      low_stock_threshold: low_stock_threshold ?? 5,
-      image: image || null,
-    });
-    const row = db.prepare('SELECT * FROM products WHERE id = ?').get(info.lastInsertRowid);
+    const { rows: [row] } = await db.query(
+      `INSERT INTO products (owner_id, name, name_en, sku, category, barcode, price_satang, cost_satang, stock, low_stock_threshold, image)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+       RETURNING *`,
+      [
+        resolveOwnerId(req),
+        name,
+        name_en || null,
+        sku || null,
+        category || null,
+        barcode || null,
+        toSatang(price),
+        toSatang(cost || 0),
+        stock || 0,
+        low_stock_threshold ?? 5,
+        image || null,
+      ]
+    );
     res.status(201).json(serializeProduct(row));
   } catch (err) {
     if (isUniqueConstraintError(err)) {
@@ -138,10 +139,10 @@ router.post('/', (req, res) => {
     }
     throw err;
   }
-});
+}));
 
-router.put('/:id', (req, res) => {
-  const existing = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
+router.put('/:id', asyncHandler(async (req, res) => {
+  const { rows: [existing] } = await db.query('SELECT * FROM products WHERE id = $1', [req.params.id]);
   if (!existing) return res.status(404).json({ error: 'Product not found' });
   if (!ownsProduct(req, existing)) return res.status(403).json({ error: 'ไม่มีสิทธิ์แก้ไขสินค้านี้' });
 
@@ -176,22 +177,18 @@ router.put('/:id', (req, res) => {
   }
 
   try {
-    db.prepare(`
-      UPDATE products SET
-        name = @name,
-        name_en = @name_en,
-        sku = @sku,
-        category = @category,
-        barcode = @barcode,
-        price_satang = @price_satang,
-        cost_satang = @cost_satang,
-        stock = @stock,
-        low_stock_threshold = @low_stock_threshold,
-        image = @image,
-        active = @active,
-        updated_at = datetime('now', 'localtime')
-      WHERE id = @id
-    `).run(merged);
+    await db.query(
+      `UPDATE products SET
+        name = $1, name_en = $2, sku = $3, category = $4, barcode = $5,
+        price_satang = $6, cost_satang = $7, stock = $8, low_stock_threshold = $9,
+        image = $10, active = $11, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $12`,
+      [
+        merged.name, merged.name_en, merged.sku, merged.category, merged.barcode,
+        merged.price_satang, merged.cost_satang, merged.stock, merged.low_stock_threshold,
+        merged.image, merged.active, merged.id,
+      ]
+    );
   } catch (err) {
     if (isUniqueConstraintError(err)) {
       return res.status(400).json({ error: 'บาร์โค้ดนี้ถูกใช้กับสินค้าอื่นแล้ว' });
@@ -200,7 +197,7 @@ router.put('/:id', (req, res) => {
   }
 
   if (Object.keys(changes).length > 0) {
-    logAudit({
+    await logAudit({
       entityType: 'product',
       entityId: existing.id,
       action: 'update',
@@ -210,19 +207,19 @@ router.put('/:id', (req, res) => {
     });
   }
 
-  const row = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
+  const { rows: [row] } = await db.query('SELECT * FROM products WHERE id = $1', [req.params.id]);
   res.json(serializeProduct(row));
-});
+}));
 
-router.delete('/:id', (req, res) => {
-  const existing = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
+router.delete('/:id', asyncHandler(async (req, res) => {
+  const { rows: [existing] } = await db.query('SELECT * FROM products WHERE id = $1', [req.params.id]);
   if (!existing) return res.status(404).json({ error: 'Product not found' });
   if (!ownsProduct(req, existing)) return res.status(403).json({ error: 'ไม่มีสิทธิ์ลบสินค้านี้' });
 
   const actor = (req.body.actor || '').trim();
   if (!actor) return res.status(400).json({ error: 'actor is required' });
 
-  logAudit({
+  await logAudit({
     entityType: 'product',
     entityId: existing.id,
     action: 'delete',
@@ -231,37 +228,40 @@ router.delete('/:id', (req, res) => {
     detail: { name: existing.name, price: toBaht(existing.price_satang) },
   });
 
-  db.prepare('DELETE FROM products WHERE id = ?').run(req.params.id);
+  await db.query('DELETE FROM products WHERE id = $1', [req.params.id]);
   if (existing.image) {
     fs.unlink(path.join(uploadsDir, path.basename(existing.image)), () => {});
   }
   res.status(204).end();
-});
+}));
 
-router.post('/:id/image', (req, res) => {
-  const existing = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
+router.post('/:id/image', asyncHandler(async (req, res) => {
+  const { rows: [existing] } = await db.query('SELECT * FROM products WHERE id = $1', [req.params.id]);
   if (!existing) return res.status(404).json({ error: 'Product not found' });
   if (!ownsProduct(req, existing)) return res.status(403).json({ error: 'ไม่มีสิทธิ์แก้ไขสินค้านี้' });
 
-  upload.single('image')(req, res, (err) => {
-    if (err) return res.status(400).json({ error: err.message });
-    if (!req.file) return res.status(400).json({ error: 'No image file provided' });
+  upload.single('image')(req, res, async (err) => {
+    try {
+      if (err) return res.status(400).json({ error: err.message });
+      if (!req.file) return res.status(400).json({ error: 'No image file provided' });
 
-    const imagePath = `/uploads/${req.file.filename}`;
-    db.prepare("UPDATE products SET image = ?, updated_at = datetime('now', 'localtime') WHERE id = ?")
-      .run(imagePath, req.params.id);
+      const imagePath = `/uploads/${req.file.filename}`;
+      await db.query('UPDATE products SET image = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [imagePath, req.params.id]);
 
-    if (existing.image) {
-      const oldFile = path.join(uploadsDir, path.basename(existing.image));
-      fs.unlink(oldFile, () => {});
+      if (existing.image) {
+        const oldFile = path.join(uploadsDir, path.basename(existing.image));
+        fs.unlink(oldFile, () => {});
+      }
+
+      const { rows: [row] } = await db.query('SELECT * FROM products WHERE id = $1', [req.params.id]);
+      res.json(serializeProduct(row));
+    } catch (dbErr) {
+      res.status(500).json({ error: dbErr.message });
     }
-
-    const row = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
-    res.json(serializeProduct(row));
   });
-});
+}));
 
-router.post('/:id/stock', (req, res) => {
+router.post('/:id/stock', asyncHandler(async (req, res) => {
   const { change, reason, actor } = req.body;
   if (!Number.isInteger(change)) {
     return res.status(400).json({ error: 'change must be an integer' });
@@ -269,7 +269,7 @@ router.post('/:id/stock', (req, res) => {
   const actorName = (actor || '').trim();
   if (!actorName) return res.status(400).json({ error: 'actor is required' });
 
-  const existing = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
+  const { rows: [existing] } = await db.query('SELECT * FROM products WHERE id = $1', [req.params.id]);
   if (!existing) return res.status(404).json({ error: 'Product not found' });
   if (!ownsProduct(req, existing)) return res.status(403).json({ error: 'ไม่มีสิทธิ์แก้ไขสินค้านี้' });
 
@@ -278,24 +278,30 @@ router.post('/:id/stock', (req, res) => {
     return res.status(400).json({ error: 'Stock cannot go below zero' });
   }
 
-  const tx = db.transaction(() => {
-    db.prepare("UPDATE products SET stock = ?, updated_at = datetime('now', 'localtime') WHERE id = ?")
-      .run(newStock, req.params.id);
-    db.prepare('INSERT INTO stock_movements (product_id, change, reason) VALUES (?, ?, ?)')
-      .run(req.params.id, change, reason || null);
-    logAudit({
-      entityType: 'product',
-      entityId: existing.id,
-      action: 'stock_adjust',
-      actor: actorName,
-      reason: reason || null,
-      detail: { change, from_stock: existing.stock, to_stock: newStock },
-    });
-  });
-  tx();
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query('UPDATE products SET stock = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [newStock, req.params.id]);
+    await client.query('INSERT INTO stock_movements (product_id, change, reason) VALUES ($1, $2, $3)', [req.params.id, change, reason || null]);
+    await client.query('COMMIT');
+  } catch (err) {
+    await client.query('ROLLBACK');
+    throw err;
+  } finally {
+    client.release();
+  }
 
-  const row = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
+  await logAudit({
+    entityType: 'product',
+    entityId: existing.id,
+    action: 'stock_adjust',
+    actor: actorName,
+    reason: reason || null,
+    detail: { change, from_stock: existing.stock, to_stock: newStock },
+  });
+
+  const { rows: [row] } = await db.query('SELECT * FROM products WHERE id = $1', [req.params.id]);
   res.json(serializeProduct(row));
-});
+}));
 
 module.exports = router;

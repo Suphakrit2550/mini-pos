@@ -5,8 +5,8 @@
 
 // reset-password.js = กันตัวเองล็อกอินไม่ได้ครับ
 // reset-password.js — กู้รหัสผ่านผ่าน Terminal
-// สั่งด้วย npm run reset-password -- <ชื่อผู้ใช้> ใช้ตอนลืมรหัสผ่านและไม่มีใครช่วยรีเซ็ตให้ผ่านหน้าเว็บได้ 
-// (เช่น เป็น admin คนเดียวแล้วลืมรหัสตัวเอง) — ถามรหัสใหม่แล้วอัปเดตให้ทันที พร้อม sign out 
+// สั่งด้วย npm run reset-password -- <ชื่อผู้ใช้> ใช้ตอนลืมรหัสผ่านและไม่มีใครช่วยรีเซ็ตให้ผ่านหน้าเว็บได้
+// (เช่น เป็น admin คนเดียวแล้วลืมรหัสตัวเอง) — ถามรหัสใหม่แล้วอัปเดตให้ทันที พร้อม sign out
 // ทุก session เก่าของบัญชีนั้นเพื่อความปลอดภัย หลักการคือ การเข้าถึงเครื่อง Mac นี้ได้ = ยืนยันตัวตนแล้ว เพราะแอปนี้ไม่มีระบบอีเมลให้ verify
 
 const readline = require('readline');
@@ -15,29 +15,41 @@ const { hashPassword } = require('../server/lib/auth');
 
 const username = process.argv[2];
 
-if (!username) {
-  console.error('Usage: npm run reset-password -- <username>');
-  const users = db.prepare('SELECT username FROM users').all();
-  if (users.length) {
-    console.error('Existing accounts: ' + users.map((u) => u.username).join(', '));
+async function main() {
+  if (!username) {
+    console.error('Usage: npm run reset-password -- <username>');
+    const { rows: users } = await db.query('SELECT username FROM users');
+    if (users.length) {
+      console.error('Existing accounts: ' + users.map((u) => u.username).join(', '));
+    }
+    process.exitCode = 1;
+    return;
   }
-  process.exit(1);
-}
 
-const user = db.prepare('SELECT * FROM users WHERE username = ?').get(username);
-if (!user) {
-  console.error(`No account named "${username}".`);
-  process.exit(1);
-}
+  const { rows: [user] } = await db.query('SELECT * FROM users WHERE username = $1', [username]);
+  if (!user) {
+    console.error(`No account named "${username}".`);
+    process.exitCode = 1;
+    return;
+  }
 
-const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-rl.question('New password (at least 6 characters): ', (password) => {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  const password = await new Promise((resolve) => rl.question('New password (at least 6 characters): ', resolve));
   rl.close();
+
   if (!password || password.length < 6) {
     console.error('Password must be at least 6 characters.');
-    process.exit(1);
+    process.exitCode = 1;
+    return;
   }
-  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(hashPassword(password), user.id);
-  db.prepare('DELETE FROM sessions WHERE user_id = ?').run(user.id);
+  await db.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hashPassword(password), user.id]);
+  await db.query('DELETE FROM sessions WHERE user_id = $1', [user.id]);
   console.log(`Password for "${username}" has been reset. All existing sessions were signed out.`);
-});
+}
+
+main()
+  .catch((err) => {
+    console.error(err);
+    process.exitCode = 1;
+  })
+  .finally(() => db.pool.end());

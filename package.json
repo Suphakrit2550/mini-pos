@@ -5,17 +5,15 @@
   "private": true,
   "main": "server/index.js",
   "scripts": {
-    "start": "node server/index.js",
-    "dev": "node --watch server/index.js",
-    "reset-password": "node scripts/reset-password.js"
+    "start": "NODE_ENV=production node --env-file=.env server/index.js",
+    "dev": "node --env-file=.env --watch server/index.js",
+    "reset-password": "node --env-file=.env scripts/reset-password.js",
+    "backup": "node --env-file=.env scripts/backup.js"
   },
   "dependencies": {
-    "better-sqlite3": "^13.0.3",
     "express": "^4.19.2",
     "multer": "^2.2.0",
+    "pg": "^8.23.0",
     "selfsigned": "^5.5.0"
-  },
-  "allowScripts": {
-    "better-sqlite3@13.0.3": true
   }
 }
