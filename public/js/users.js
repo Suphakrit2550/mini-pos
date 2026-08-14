@@ -41,6 +41,7 @@ function renderTable() {
       <td>${formatDate(u.created_at)}</td>
       <td>
         <div class="row-actions">
+          <button class="btn btn-ghost rename-btn">แก้ไขชื่อ</button>
           <button class="btn btn-ghost role-btn">${u.role === 'admin' ? 'ลดเป็นพนักงาน' : 'เลื่อนเป็นแอดมิน'}</button>
           <button class="btn btn-ghost reset-btn">รีเซ็ตรหัสผ่าน</button>
           ${locked ? '<button class="btn btn-ghost unlock-btn">ปลดล็อก</button>' : ''}
@@ -54,6 +55,7 @@ function renderTable() {
 
   tableBody.querySelectorAll('tr').forEach((row) => {
     const id = Number(row.dataset.id);
+    row.querySelector('.rename-btn').addEventListener('click', () => openRenameUser(id));
     row.querySelector('.role-btn').addEventListener('click', () => toggleRole(id));
     row.querySelector('.reset-btn').addEventListener('click', () => openResetPassword(id));
     const unlockBtn = row.querySelector('.unlock-btn');
@@ -127,6 +129,42 @@ userForm.addEventListener('submit', async (e) => {
     });
     showToast('เพิ่มผู้ใช้แล้ว');
     userModal.classList.add('hidden');
+    await loadUsers();
+  } catch (err) {
+    showToast(err.message);
+  }
+});
+
+// Rename user modal
+const renameUserModal = document.getElementById('renameUserModal');
+const renameUserOldName = document.getElementById('renameUserOldName');
+const fieldNewUsername = document.getElementById('fieldNewUsername');
+let renameTargetId = null;
+
+function openRenameUser(id) {
+  const u = users.find((x) => x.id === id);
+  if (!u) return;
+  renameTargetId = id;
+  renameUserOldName.textContent = `ชื่อปัจจุบัน: ${u.username}`;
+  fieldNewUsername.value = u.username;
+  renameUserModal.classList.remove('hidden');
+  fieldNewUsername.focus();
+}
+
+document.getElementById('cancelRenameUser').addEventListener('click', () => {
+  renameUserModal.classList.add('hidden');
+});
+
+document.getElementById('confirmRenameUser').addEventListener('click', async () => {
+  const newUsername = fieldNewUsername.value.trim();
+  if (!newUsername) {
+    showToast('กรุณากรอกชื่อผู้ใช้');
+    return;
+  }
+  try {
+    await api.updateUser(renameTargetId, { username: newUsername });
+    showToast('แก้ไขชื่อผู้ใช้แล้ว');
+    renameUserModal.classList.add('hidden');
     await loadUsers();
   } catch (err) {
     showToast(err.message);

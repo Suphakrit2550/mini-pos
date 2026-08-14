@@ -51,7 +51,21 @@ router.put('/:id', asyncHandler(async (req, res) => {
   const { rows: [target] } = await db.query('SELECT * FROM users WHERE id = $1', [req.params.id]);
   if (!target) return res.status(404).json({ error: 'ไม่พบผู้ใช้' });
 
-  const { role, newPassword, active, unlock } = req.body;
+  const { role, newPassword, active, unlock, username } = req.body;
+
+  if (typeof username === 'string' && username.trim() && username.trim() !== target.username) {
+    const newUsername = username.trim();
+    try {
+      await db.query('UPDATE users SET username = $1 WHERE id = $2', [newUsername, target.id]);
+    } catch (err) {
+      if (err.code === '23505') {
+        return res.status(400).json({ error: 'มีชื่อผู้ใช้นี้อยู่แล้ว' });
+      }
+      throw err;
+    }
+    await logAudit({ entityType: 'user', entityId: target.id, action: 'rename', actor: req.user.username, detail: { from: target.username, to: newUsername } });
+    target.username = newUsername;
+  }
 
   if (role && role !== target.role) {
     if (target.role === 'admin' && role !== 'admin' && (await activeAdminCount()) <= 1) {

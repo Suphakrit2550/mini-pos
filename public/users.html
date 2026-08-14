@@ -83,6 +83,21 @@
   </div>
 </div>
 
+<div class="modal-backdrop hidden" id="renameUserModal">
+  <div class="modal">
+    <h2>แก้ไขชื่อผู้ใช้</h2>
+    <p class="muted" id="renameUserOldName"></p>
+    <div class="field">
+      <label>ชื่อผู้ใช้ใหม่</label>
+      <input type="text" id="fieldNewUsername" autocomplete="off">
+    </div>
+    <div class="modal-actions">
+      <button type="button" class="btn btn-ghost" id="cancelRenameUser">ยกเลิก</button>
+      <button type="button" class="btn btn-primary" id="confirmRenameUser">บันทึก</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal-backdrop hidden" id="resetPasswordModal">
   <div class="modal">
     <h2>รีเซ็ตรหัสผ่าน</h2>
