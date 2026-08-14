@@ -53,6 +53,20 @@ if (ENABLE_LOCAL_HTTPS) {
 
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
+// Product photos live in the product_images table (see server/db.js), not
+// on local disk, so they survive moving this app to a different host.
+// Public/unauthenticated to match how /uploads/* files used to be served
+// by express.static above — a given id's bytes never change once created
+// (replacing a photo makes a new id and deletes the old one), so this is
+// safe to cache hard.
+app.get('/uploads/:id', asyncHandler(async (req, res) => {
+  const { rows: [image] } = await db.query('SELECT content_type, data FROM product_images WHERE id = $1', [req.params.id]);
+  if (!image) return res.status(404).end();
+  res.set('Content-Type', image.content_type);
+  res.set('Cache-Control', 'public, max-age=31536000, immutable');
+  res.send(image.data);
+}));
+
 app.use('/api/auth', authRouter);
 
 // Every other API route requires a valid session — the HTML/JS/CSS shells

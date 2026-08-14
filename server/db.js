@@ -80,6 +80,17 @@ const SCHEMA = `
   CREATE UNIQUE INDEX IF NOT EXISTS idx_products_owner_barcode
     ON products(owner_id, barcode) WHERE barcode IS NOT NULL;
 
+  -- Product photos live here (not on local disk) so they survive moving
+  -- the app to a different host/deploy — the whole point of putting the
+  -- rest of the data on Supabase instead of a file tied to one machine.
+  CREATE TABLE IF NOT EXISTS product_images (
+    id SERIAL PRIMARY KEY,
+    filename TEXT NOT NULL,
+    content_type TEXT NOT NULL,
+    data BYTEA NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+  );
+
   -- Sales rows are append-only: a bill's id is its bill number, and rows
   -- are NEVER deleted, so bill numbers stay strictly sequential with no
   -- gaps or reuse. Cancel/refund is a status change (voided_*), not a delete.

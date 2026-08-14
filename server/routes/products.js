@@ -1,9 +1,6 @@
 // API สินค้า แยกคลังตามบัญชี
 
 const express = require('express');
-const fs = require('fs');
-const path = require('path');
-const crypto = require('crypto');
 const multer = require('multer');
 const db = require('../db');
 const asyncHandler = require('../lib/asyncHandler');
@@ -12,31 +9,30 @@ const { logAudit, getAuditLog } = require('../lib/audit');
 
 const router = express.Router();
 
-const uploadsDir = path.join(__dirname, '..', '..', 'public', 'uploads');
-const ALLOWED_TYPES = {
-  'image/jpeg': '.jpg',
-  'image/png': '.png',
-  'image/webp': '.webp',
-};
+const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
-  filename: (req, file, cb) => {
-    const ext = ALLOWED_TYPES[file.mimetype];
-    cb(null, `${crypto.randomUUID()}${ext}`);
-  },
-});
-
+// Images are stored as rows in the product_images table (see server/db.js),
+// not as files on disk — memoryStorage just buffers the upload in RAM long
+// enough to write it into the database.
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    if (!ALLOWED_TYPES[file.mimetype]) {
+    if (!ALLOWED_TYPES.includes(file.mimetype)) {
       return cb(new Error('Only JPEG, PNG, or WEBP images are allowed'));
     }
     cb(null, true);
   },
 });
+
+// products.image stores a path like "/uploads/42" where 42 is the
+// product_images.id — this pulls that id back out to delete the old row
+// when an image is replaced or the product is deleted.
+function imageIdFromPath(imagePath) {
+  if (!imagePath) return null;
+  const match = /\/uploads\/(\d+)$/.exec(imagePath);
+  return match ? Number(match[1]) : null;
+}
 
 function serializeProduct(row) {
   if (!row) return row;
@@ -229,8 +225,9 @@ router.delete('/:id', asyncHandler(async (req, res) => {
   });
 
   await db.query('DELETE FROM products WHERE id = $1', [req.params.id]);
-  if (existing.image) {
-    fs.unlink(path.join(uploadsDir, path.basename(existing.image)), () => {});
+  const oldImageId = imageIdFromPath(existing.image);
+  if (oldImageId) {
+    await db.query('DELETE FROM product_images WHERE id = $1', [oldImageId]);
   }
   res.status(204).end();
 }));
@@ -245,12 +242,16 @@ router.post('/:id/image', asyncHandler(async (req, res) => {
       if (err) return res.status(400).json({ error: err.message });
       if (!req.file) return res.status(400).json({ error: 'No image file provided' });
 
-      const imagePath = `/uploads/${req.file.filename}`;
+      const { rows: [imageRow] } = await db.query(
+        'INSERT INTO product_images (filename, content_type, data) VALUES ($1, $2, $3) RETURNING id',
+        [req.file.originalname, req.file.mimetype, req.file.buffer]
+      );
+      const imagePath = `/uploads/${imageRow.id}`;
       await db.query('UPDATE products SET image = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [imagePath, req.params.id]);
 
-      if (existing.image) {
-        const oldFile = path.join(uploadsDir, path.basename(existing.image));
-        fs.unlink(oldFile, () => {});
+      const oldImageId = imageIdFromPath(existing.image);
+      if (oldImageId) {
+        await db.query('DELETE FROM product_images WHERE id = $1', [oldImageId]);
       }
 
       const { rows: [row] } = await db.query('SELECT * FROM products WHERE id = $1', [req.params.id]);
