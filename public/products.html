@@ -19,6 +19,7 @@
   <header class="topbar">
     <h1>Mini POS</h1>
     <div class="topbar-right">
+      <button class="nav-toggle" id="navToggle" aria-label="เมนู">☰</button>
       <nav class="nav">
         <a href="index.html">ขายสินค้า</a>
         <a href="products.html" class="active">จัดการสินค้า</a>
@@ -42,19 +43,21 @@
       </div>
 
       <div class="card">
-        <table>
-          <thead>
-            <tr>
-              <th></th>
-              <th>สินค้า</th>
-              <th>หมวดหมู่</th>
-              <th class="text-right">ราคา</th>
-              <th class="text-right">คงเหลือ</th>
-              <th class="text-right">จัดการ</th>
-            </tr>
-          </thead>
-          <tbody id="productTableBody"></tbody>
-        </table>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th></th>
+                <th>สินค้า</th>
+                <th>หมวดหมู่</th>
+                <th class="text-right">ราคา</th>
+                <th class="text-right">คงเหลือ</th>
+                <th class="text-right">จัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="productTableBody"></tbody>
+          </table>
+        </div>
         <p id="emptyState" class="empty-state hidden">ยังไม่มีสินค้า เพิ่มสินค้าแรกของคุณ</p>
       </div>
     </section>
@@ -184,6 +187,7 @@
 <script src="vendor/html5-qrcode.min.js"></script>
 <script src="js/api.js"></script>
 <script src="js/theme.js"></script>
+<script src="js/nav.js"></script>
 <script src="js/scanner.js"></script>
 <script src="js/products.js"></script>
 </body>

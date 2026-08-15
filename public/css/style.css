@@ -82,7 +82,15 @@ a {
 .app {
   display: flex;
   flex-direction: column;
+  /* 100vh on mobile Safari is measured against the viewport with the
+     address bar hidden, not what's actually visible — the real, visible
+     area is shorter, so the bottom of the page (part of the product
+     grid's scroll area) ends up sized past the edge of the screen with no
+     page-level scroll to reach it. 100dvh tracks the actual visible
+     viewport instead; the 100vh line above is only a fallback for older
+     browsers that don't support dvh yet. */
   height: 100vh;
+  height: 100dvh;
   overflow: hidden;
 }
 
@@ -94,6 +102,7 @@ a {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
+  position: relative;
 }
 
 .topbar h1 {
@@ -149,10 +158,83 @@ a {
   color: var(--text);
 }
 
+.nav-toggle {
+  display: none;
+  width: var(--tap);
+  height: var(--tap);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 20px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  order: -1;
+}
+
+/* Phones — collapse the nav links behind a hamburger button instead of
+   letting 5-6 links + theme/user controls overflow the topbar. */
+@media (max-width: 640px) {
+  .nav-toggle {
+    display: flex;
+  }
+
+  .nav {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 12px;
+    right: 12px;
+    flex-direction: column;
+    gap: 2px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px;
+    margin-top: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    z-index: 40;
+  }
+
+  .nav.nav-open {
+    display: flex;
+  }
+
+  .nav a {
+    width: 100%;
+  }
+
+  /* The username/logout/theme-toggle cluster (auth.js injects .auth-user
+     next to .theme-toggle) doesn't fit on one line with the title once the
+     nav links are hidden behind the hamburger — wrap it onto its own row
+     instead of letting it get clipped off the right edge. */
+  .topbar {
+    flex-wrap: wrap;
+    row-gap: 8px;
+  }
+
+  .topbar-right {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    row-gap: 8px;
+    flex: 1 1 auto;
+  }
+}
+
 .main {
   flex: 1;
   overflow: hidden;
   display: flex;
+}
+
+@media (max-width: 640px) {
+  /* Only the POS page has two side-by-side children here (product grid +
+     cart) — everywhere else is a single section, which a lone flex child
+     lays out identically in either direction, so this is safe app-wide. */
+  .main {
+    flex-direction: column;
+  }
 }
 
 /* Buttons */
@@ -245,11 +327,42 @@ a {
   flex: 1;
 }
 
+@media (max-width: 480px) {
+  /* Two inputs side by side (e.g. price/cost) get too narrow to type into
+     comfortably on a phone — stack them instead. */
+  .field-row {
+    flex-direction: column;
+    gap: 0;
+  }
+}
+
 /* Cards / surfaces */
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+}
+
+/* Wrap a <table> in this to keep wide tables usable on narrow screens —
+   scrolls horizontally instead of squeezing/clipping columns. */
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* A <table>'s default layout mode wraps cell text to fit instead of
+   growing past its container — which defeats the scroll wrapper above,
+   since there's nothing left to scroll. Forcing cells not to wrap makes
+   the table keep its natural width and actually overflow, so .table-wrap
+   has something to scroll. */
+.table-wrap table {
+  width: max-content;
+  min-width: 100%;
+}
+
+.table-wrap th,
+.table-wrap td {
+  white-space: nowrap;
 }
 
 /* Utility */

@@ -19,6 +19,7 @@
   <header class="topbar">
     <h1>Mini POS</h1>
     <div class="topbar-right">
+      <button class="nav-toggle" id="navToggle" aria-label="เมนู">☰</button>
       <nav class="nav">
         <a href="index.html">ขายสินค้า</a>
         <a href="products.html">จัดการสินค้า</a>
@@ -46,20 +47,22 @@
       </div>
 
       <div class="card">
-        <table>
-          <thead>
-            <tr>
-              <th>บิลเลขที่</th>
-              <th>เวลา</th>
-              <th>ลูกค้า</th>
-              <th class="text-right">จำนวนรายการ</th>
-              <th class="text-right">ยอดรวม</th>
-              <th>สถานะ</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="ordersTableBody"></tbody>
-        </table>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>บิลเลขที่</th>
+                <th>เวลา</th>
+                <th>ลูกค้า</th>
+                <th class="text-right">จำนวนรายการ</th>
+                <th class="text-right">ยอดรวม</th>
+                <th>สถานะ</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="ordersTableBody"></tbody>
+          </table>
+        </div>
         <p id="emptyState" class="empty-state hidden">ไม่มีออเดอร์ในช่วงเวลานี้</p>
       </div>
     </section>
@@ -105,6 +108,7 @@
 
 <script src="js/api.js"></script>
 <script src="js/theme.js"></script>
+<script src="js/nav.js"></script>
 <script src="js/orders.js"></script>
 </body>
 </html>

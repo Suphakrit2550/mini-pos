@@ -10,6 +10,7 @@
 
 .date-filter {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   gap: 12px;
   margin-bottom: 20px;
@@ -86,5 +87,11 @@
   }
   .summary-cards {
     grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 420px) {
+  .summary-cards {
+    grid-template-columns: 1fr;
   }
 }

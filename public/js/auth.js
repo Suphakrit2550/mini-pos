@@ -36,20 +36,21 @@ document.documentElement.style.visibility = 'hidden';
   window.dispatchEvent(new CustomEvent('pos-auth-ready', { detail: data }));
 
   function injectTopbar() {
-    if (data.role === 'admin') {
-      const nav = document.querySelector('.nav');
-      if (nav) {
-        const link = document.createElement('a');
-        link.href = 'users.html';
-        link.textContent = 'จัดการผู้ใช้งาน';
-        if (location.pathname.endsWith('users.html')) link.className = 'active';
-        nav.appendChild(link);
-      }
+    const nav = document.querySelector('.nav');
+
+    if (data.role === 'admin' && nav) {
+      const link = document.createElement('a');
+      link.href = 'users.html';
+      link.textContent = 'จัดการผู้ใช้งาน';
+      if (location.pathname.endsWith('users.html')) link.className = 'active';
+      nav.appendChild(link);
     }
 
-    const topbarRight = document.querySelector('.topbar-right');
-    if (!topbarRight) return;
+    if (!nav) return;
 
+    // Lives inside .nav (not .topbar-right) so it travels with the nav
+    // links into the mobile hamburger dropdown — the topbar itself then
+    // only ever needs to hold the logo, hamburger, and theme toggle.
     const wrap = document.createElement('div');
     wrap.className = 'auth-user';
 
@@ -66,7 +67,7 @@ document.documentElement.style.visibility = 'hidden';
     });
 
     wrap.append(nameEl, logoutBtn);
-    topbarRight.appendChild(wrap);
+    nav.appendChild(wrap);
   }
 
   if (document.readyState === 'loading') {

@@ -19,6 +19,7 @@
   <header class="topbar">
     <h1>Mini POS</h1>
     <div class="topbar-right">
+      <button class="nav-toggle" id="navToggle" aria-label="เมนู">☰</button>
       <nav class="nav">
         <a href="index.html">ขายสินค้า</a>
         <a href="products.html">จัดการสินค้า</a>
@@ -62,40 +63,46 @@
 
       <div class="card report-panel daily-panel">
         <h3>สรุปยอดขาย-กำไรรายวัน</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>วันที่</th>
-              <th class="text-right">ออเดอร์</th>
-              <th class="text-right">ยอดขาย</th>
-              <th class="text-right">กำไร</th>
-            </tr>
-          </thead>
-          <tbody id="dailyBody"></tbody>
-        </table>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>วันที่</th>
+                <th class="text-right">ออเดอร์</th>
+                <th class="text-right">ยอดขาย</th>
+                <th class="text-right">กำไร</th>
+              </tr>
+            </thead>
+            <tbody id="dailyBody"></tbody>
+          </table>
+        </div>
         <p id="dailyEmpty" class="empty-state hidden">ไม่มีข้อมูลในช่วงเวลานี้</p>
       </div>
 
       <div class="report-grid">
         <div class="card report-panel">
           <h3>สินค้าขายดี</h3>
-          <table>
-            <thead>
-              <tr><th>สินค้า</th><th class="text-right">จำนวน</th><th class="text-right">ยอดขาย</th></tr>
-            </thead>
-            <tbody id="topProductsBody"></tbody>
-          </table>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>สินค้า</th><th class="text-right">จำนวน</th><th class="text-right">ยอดขาย</th></tr>
+              </thead>
+              <tbody id="topProductsBody"></tbody>
+            </table>
+          </div>
           <p id="topEmpty" class="empty-state hidden">ไม่มีข้อมูล</p>
         </div>
 
         <div class="card report-panel">
           <h3>สินค้าใกล้หมด</h3>
-          <table>
-            <thead>
-              <tr><th>สินค้า</th><th class="text-right">คงเหลือ</th></tr>
-            </thead>
-            <tbody id="lowStockBody"></tbody>
-          </table>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr><th>สินค้า</th><th class="text-right">คงเหลือ</th></tr>
+              </thead>
+              <tbody id="lowStockBody"></tbody>
+            </table>
+          </div>
           <p id="lowStockEmpty" class="empty-state hidden">สต็อกสินค้าปกติทั้งหมด</p>
         </div>
       </div>
@@ -105,6 +112,7 @@
 
 <script src="js/api.js"></script>
 <script src="js/theme.js"></script>
+<script src="js/nav.js"></script>
 <script src="js/reports.js"></script>
 </body>
 </html>

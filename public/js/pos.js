@@ -12,6 +12,15 @@ const cartItemsEl = document.getElementById('cartItems');
 const cartTotalEl = document.getElementById('cartTotal');
 const checkoutBtn = document.getElementById('checkoutBtn');
 const clearCartBtn = document.getElementById('clearCart');
+const cartHandle = document.getElementById('cartHandle');
+const cartHandleSummary = document.getElementById('cartHandleSummary');
+const posCart = document.querySelector('.pos-cart');
+
+// Mobile only (see .cart-handle in pos.css) — tap the handle bar to expand
+// the cart up over most of the screen, or collapse it back down.
+cartHandle.addEventListener('click', () => {
+  posCart.classList.toggle('expanded');
+});
 
 async function loadProducts() {
   products = await api.getProducts(true);
@@ -115,6 +124,11 @@ function renderCart() {
     checkoutBtn.disabled = false;
   }
   cartTotalEl.textContent = `฿${formatCurrency(cartTotal())}`;
+
+  const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  cartHandleSummary.textContent = itemCount === 0
+    ? 'ยังไม่มีสินค้าในตะกร้า'
+    : `${itemCount} รายการ · ฿${formatCurrency(cartTotal())}`;
 }
 
 clearCartBtn.addEventListener('click', () => {

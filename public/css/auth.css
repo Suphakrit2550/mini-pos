@@ -4,6 +4,9 @@
  * - หน้าเข้าสู่ระบบ/ตั้งค่าเริ่มต้น (.auth-page) เช่น login.html, setup.html
  */
 
+/* Lives inside .nav (see js/auth.js) so it travels into the mobile
+   hamburger dropdown along with the nav links — on desktop .nav is a
+   horizontal row, so this sits inline as the last item with a divider. */
 .auth-user {
   display: flex;
   align-items: center;
@@ -16,6 +19,20 @@
 .auth-username {
   font-size: 14px;
   font-weight: 500;
+}
+
+@media (max-width: 640px) {
+  /* Inside the mobile dropdown .nav becomes a vertical list — the divider
+     flips from a left border to a top one, and username/logout spread to
+     the row's full width instead of staying inline-sized. */
+  .auth-user {
+    width: 100%;
+    justify-content: space-between;
+    padding: 10px 0 0;
+    margin: 6px 0 0;
+    border-left: none;
+    border-top: 1px solid var(--border);
+  }
 }
 
 .auth-page {

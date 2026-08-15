@@ -19,6 +19,7 @@
   <header class="topbar">
     <h1>Mini POS</h1>
     <div class="topbar-right">
+      <button class="nav-toggle" id="navToggle" aria-label="เมนู">☰</button>
       <nav class="nav">
         <a href="index.html" class="active">ขายสินค้า</a>
         <a href="products.html">จัดการสินค้า</a>
@@ -40,6 +41,10 @@
     </section>
 
     <aside class="pos-cart card">
+      <button class="cart-handle" id="cartHandle" aria-label="ขยาย/ย่อตะกร้าสินค้า">
+        <span class="cart-handle-grip"></span>
+        <span class="cart-handle-summary" id="cartHandleSummary">ยังไม่มีสินค้าในตะกร้า</span>
+      </button>
       <div class="cart-header">
         <h2>ตะกร้าสินค้า</h2>
         <button class="btn btn-ghost" id="clearCart">ล้าง</button>
@@ -107,6 +112,7 @@
 <script src="vendor/html5-qrcode.min.js"></script>
 <script src="js/api.js"></script>
 <script src="js/theme.js"></script>
+<script src="js/nav.js"></script>
 <script src="js/scanner.js"></script>
 <script src="js/pos.js"></script>
 </body>

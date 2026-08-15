@@ -10,8 +10,13 @@
 
 .page-header {
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 16px;
+}
+
+.page-header input {
+  min-width: 160px;
 }
 
 .owner-select-wrap {
@@ -42,6 +47,7 @@
 
 .page-header input {
   flex: 1;
+  min-width: 0;
   height: var(--tap);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -62,6 +68,7 @@
 
 .row-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
   justify-content: flex-end;
 }
@@ -150,6 +157,7 @@
 
 .barcode-input-row input {
   flex: 1;
+  min-width: 0;
 }
 
 .barcode-input-row .btn {
