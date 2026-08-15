@@ -2,6 +2,7 @@
 // - แสดงกริดสินค้า ค้นหา/สแกนบาร์โค้ดเพื่อเพิ่มลงตะกร้า ปรับจำนวนในตะกร้าได้
 // - เปิดหน้าต่างชำระเงิน คำนวณเงินทอน แล้วยืนยันการขายผ่าน API /api/sales
 // - หลังขายสำเร็จ แสดงใบเสร็จในหน้าต่างและมีปุ่มพิมพ์ใบเสร็จ
+// - แอดมินเลือกขายแทนพนักงานคนอื่นได้ผ่าน ownerSelect (สินค้า/สต็อก/ยอดขายจะอยู่ในบัญชีของคนนั้น)
 
 let products = [];
 let cart = []; // { product_id, name, price, quantity, stock }
@@ -15,6 +16,8 @@ const clearCartBtn = document.getElementById('clearCart');
 const cartHandle = document.getElementById('cartHandle');
 const cartHandleSummary = document.getElementById('cartHandleSummary');
 const posCart = document.querySelector('.pos-cart');
+const ownerSelect = document.getElementById('ownerSelect');
+const ownerSelectWrap = document.getElementById('ownerSelectWrap');
 
 // Mobile only (see .cart-handle in pos.css) — tap the handle bar to expand
 // the cart up over most of the screen, or collapse it back down.
@@ -22,9 +25,36 @@ cartHandle.addEventListener('click', () => {
   posCart.classList.toggle('expanded');
 });
 
+function selectedOwnerId() {
+  return ownerSelect.value ? Number(ownerSelect.value) : window.currentUserId;
+}
+
+async function setupOwnerSelect() {
+  if (window.currentUserRole !== 'admin') return;
+  const users = await api.getUsers();
+  ownerSelect.innerHTML = users.map((u) => `
+    <option value="${u.id}">${escapeHtml(u.username)}${u.username === window.currentUsername ? ' (คุณ)' : ''}${u.active ? '' : ' (ปิดใช้งาน)'}</option>
+  `).join('');
+  ownerSelect.value = window.currentUserId;
+  ownerSelectWrap.classList.remove('hidden');
+  ownerSelect.addEventListener('change', () => {
+    // The cart holds product ids from the previous owner's catalog — keeping
+    // it around after switching would let a checkout mix items across two
+    // different accounts' stock, so it's cleared instead.
+    cart = [];
+    renderCart();
+    loadProducts();
+  });
+}
+
 async function loadProducts() {
-  products = await api.getProducts(true);
+  products = await api.getProducts(true, selectedOwnerId());
   renderProducts();
+}
+
+async function init() {
+  await setupOwnerSelect();
+  await loadProducts();
 }
 
 function renderProducts() {
@@ -203,6 +233,7 @@ confirmCheckoutBtn.addEventListener('click', async () => {
       payment_method: 'cash',
       received_amount: received,
       customer_name: customerNameInput.value.trim() || null,
+      owner_id: selectedOwnerId(),
     };
     const sale = await api.createSale(payload);
     checkoutModal.classList.add('hidden');
@@ -266,4 +297,8 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-loadProducts();
+if (window.currentUserId) {
+  init();
+} else {
+  window.addEventListener('pos-auth-ready', init, { once: true });
+}

@@ -16,6 +16,7 @@ const reportsRouter = require('./routes/reports');
 const settingsRouter = require('./routes/settings');
 const authRouter = require('./routes/auth');
 const usersRouter = require('./routes/users');
+const auditRouter = require('./routes/audit');
 const { generateServerCert, localIPv4Addresses, caCertPath } = require('./lib/cert');
 const { getSessionUser, parseCookies, COOKIE_NAME } = require('./lib/auth');
 
@@ -90,6 +91,7 @@ app.use('/api/sales', requireAuth, salesRouter);
 app.use('/api/reports', requireAuth, reportsRouter);
 app.use('/api/settings', requireAuth, settingsRouter);
 app.use('/api/users', requireAuth, requireAdmin, usersRouter);
+app.use('/api/audit', requireAuth, requireAdmin, auditRouter);
 
 // Catches anything an asyncHandler-wrapped route passed to next(err), plus
 // sync throws Express already catches on its own. Always a plain JSON 500 —

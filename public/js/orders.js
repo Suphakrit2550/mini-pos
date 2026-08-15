@@ -2,11 +2,24 @@
 // - แสดงรายการบิลตามช่วงวันที่ที่เลือก พร้อมสถานะ (สำเร็จ/ยกเลิก/คืนเงิน)
 // - เปิดหน้าต่างดูรายละเอียดบิล พร้อมประวัติการแก้ไข (audit log)
 // - มีปุ่มยกเลิกออเดอร์และคืนเงิน ที่ต้องกรอกชื่อผู้ดำเนินการและเหตุผลก่อนยืนยัน
+// - แอดมินดูรวมทุกบัญชี (ค่าเริ่มต้น) หรือกรองดูของพนักงานคนใดคนหนึ่งได้ผ่าน ownerSelect
 
 const fromDateInput = document.getElementById('fromDate');
 const toDateInput = document.getElementById('toDate');
 const tableBody = document.getElementById('ordersTableBody');
 const emptyState = document.getElementById('emptyState');
+const ownerSelect = document.getElementById('ownerSelect');
+const ownerSelectWrap = document.getElementById('ownerSelectWrap');
+
+async function setupOwnerSelect() {
+  if (window.currentUserRole !== 'admin') return;
+  const users = await api.getUsers();
+  ownerSelect.innerHTML = '<option value="">ทุกคน (รวมทั้งร้าน)</option>' + users.map((u) => `
+    <option value="${u.id}">${escapeHtml(u.username)}${u.username === window.currentUsername ? ' (คุณ)' : ''}${u.active ? '' : ' (ปิดใช้งาน)'}</option>
+  `).join('');
+  ownerSelectWrap.classList.remove('hidden');
+  ownerSelect.addEventListener('change', loadOrders);
+}
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -31,7 +44,8 @@ function statusBadge(status) {
 }
 
 async function loadOrders() {
-  const orders = await api.getSales(fromDateInput.value, toDateInput.value);
+  const userId = ownerSelect.value ? Number(ownerSelect.value) : null;
+  const orders = await api.getSales(fromDateInput.value, toDateInput.value, userId);
 
   emptyState.classList.toggle('hidden', orders.length > 0);
 
@@ -178,4 +192,13 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-loadOrders();
+async function init() {
+  await setupOwnerSelect();
+  await loadOrders();
+}
+
+if (window.currentUserId) {
+  init();
+} else {
+  window.addEventListener('pos-auth-ready', init, { once: true });
+}

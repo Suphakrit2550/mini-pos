@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="th">
+<!--
+  ไฟล์นี้ทำหน้าที่: หน้าบันทึกการใช้งานกลาง (เฉพาะแอดมิน)
+  รวมประวัติการแก้ไข/ลบสินค้า, ปรับสต็อก, ยกเลิก/คืนเงินบิล, และจัดการบัญชีผู้ใช้ ของทุกบัญชีไว้ในที่เดียว
+  ดูตรรกะได้ที่ js/audit.js
+-->
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>บันทึกการใช้งาน · Mini POS</title>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="css/audit.css">
+<link rel="stylesheet" href="css/auth.css">
+<script>document.documentElement.setAttribute('data-theme', localStorage.getItem('pos-theme') || 'light');</script>
+<script>window.REQUIRE_ADMIN = true;</script>
+<script src="js/auth.js"></script>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <h1>Mini POS</h1>
+    <div class="topbar-right">
+      <button class="nav-toggle" id="navToggle" aria-label="เมนู">☰</button>
+      <nav class="nav">
+        <a href="index.html">ขายสินค้า</a>
+        <a href="products.html">จัดการสินค้า</a>
+        <a href="orders.html">ประวัติการขาย</a>
+        <a href="reports.html">รายงาน</a>
+        <a href="settings.html">ตั้งค่าร้าน</a>
+      </nav>
+      <button class="theme-toggle" id="themeToggle" aria-label="สลับโหมดมืด/สว่าง"></button>
+    </div>
+  </header>
+
+  <div class="main">
+    <section class="audit-page scroll">
+      <div class="date-filter">
+        <div class="field">
+          <label>ประเภท</label>
+          <select id="entityTypeFilter">
+            <option value="">ทั้งหมด</option>
+            <option value="product">สินค้า</option>
+            <option value="sale">บิลขาย</option>
+            <option value="user">ผู้ใช้งาน</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>จากวันที่</label>
+          <input type="date" id="fromDate">
+        </div>
+        <div class="field">
+          <label>ถึงวันที่</label>
+          <input type="date" id="toDate">
+        </div>
+        <button class="btn btn-primary" id="applyFilter">ค้นหา</button>
+        <button class="btn btn-ghost" id="todayFilter">วันนี้</button>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>เวลา</th>
+                <th>ประเภท</th>
+                <th>รหัส</th>
+                <th>การกระทำ</th>
+                <th>ผู้ดำเนินการ</th>
+                <th>เหตุผล</th>
+                <th>รายละเอียด</th>
+              </tr>
+            </thead>
+            <tbody id="auditTableBody"></tbody>
+          </table>
+        </div>
+        <p id="emptyState" class="empty-state hidden">ไม่มีบันทึกในช่วงเวลานี้</p>
+      </div>
+    </section>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/theme.js"></script>
+<script src="js/nav.js"></script>
+<script src="js/audit.js"></script>
+</body>
+</html>

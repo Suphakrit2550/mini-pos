@@ -57,9 +57,12 @@ const api = {
   createSale(payload) {
     return this.request('POST', '/api/sales', payload);
   },
-  getSales(from, to) {
-    const q = from && to ? `?from=${from}&to=${to}` : '';
-    return this.request('GET', `/api/sales${q}`);
+  getSales(from, to, userId = null) {
+    const params = new URLSearchParams();
+    if (from && to) { params.set('from', from); params.set('to', to); }
+    if (userId) params.set('user_id', userId);
+    const qs = params.toString();
+    return this.request('GET', `/api/sales${qs ? `?${qs}` : ''}`);
   },
   getSale(id) {
     return this.request('GET', `/api/sales/${id}`);
@@ -68,23 +71,36 @@ const api = {
     return this.request('POST', `/api/sales/${id}/void`, { action, actor, reason });
   },
 
-  getSummary(from, to) {
-    const q = from && to ? `?from=${from}&to=${to}` : '';
-    return this.request('GET', `/api/reports/summary${q}`);
+  getSummary(from, to, userId = null) {
+    const params = new URLSearchParams();
+    if (from && to) { params.set('from', from); params.set('to', to); }
+    if (userId) params.set('user_id', userId);
+    const qs = params.toString();
+    return this.request('GET', `/api/reports/summary${qs ? `?${qs}` : ''}`);
   },
-  getLowStock() {
-    return this.request('GET', '/api/reports/low-stock');
+  getLowStock(userId = null) {
+    const q = userId ? `?user_id=${userId}` : '';
+    return this.request('GET', `/api/reports/low-stock${q}`);
   },
 
-  getSettings() {
-    return this.request('GET', '/api/settings');
+  getSettings(userId = null) {
+    const q = userId ? `?user_id=${userId}` : '';
+    return this.request('GET', `/api/settings${q}`);
   },
-  updateSettings(data) {
-    return this.request('PUT', '/api/settings', data);
+  updateSettings(data, userId = null) {
+    return this.request('PUT', '/api/settings', userId ? { ...data, user_id: userId } : data);
   },
 
   changePassword(currentPassword, newPassword) {
     return this.request('PUT', '/api/auth/password', { currentPassword, newPassword });
+  },
+
+  getAuditLog(from, to, entityType = null) {
+    const params = new URLSearchParams();
+    if (from && to) { params.set('from', from); params.set('to', to); }
+    if (entityType) params.set('entity_type', entityType);
+    const qs = params.toString();
+    return this.request('GET', `/api/audit${qs ? `?${qs}` : ''}`);
   },
 
   getUsers() {

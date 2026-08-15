@@ -19,32 +19,6 @@
   min-width: 160px;
 }
 
-.owner-select-wrap {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.owner-select-wrap label {
-  font-size: 14px;
-  color: var(--text-muted);
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.owner-select-wrap select {
-  height: var(--tap);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-sm);
-  padding: 0 12px;
-  font-size: 15px;
-  font-family: inherit;
-  background: var(--surface);
-  color: var(--text);
-  flex-shrink: 0;
-}
-
 .page-header input {
   flex: 1;
   min-width: 0;

@@ -1,0 +1,50 @@
+/*
+ * ไฟล์นี้ทำหน้าที่: สไตล์เฉพาะหน้าบันทึกการใช้งานกลาง (audit.html)
+ * - ตัวกรองประเภท/วันที่, ตารางบันทึกการใช้งานรวมทุกบัญชี
+ */
+
+.audit-page {
+  flex: 1;
+  padding: 20px;
+}
+
+.date-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.date-filter .field {
+  margin-bottom: 0;
+}
+
+.date-filter input[type="date"],
+.date-filter select {
+  height: var(--tap);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 12px;
+  font-size: 15px;
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.audit-entity-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--bg);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.audit-detail-cell {
+  color: var(--text-muted);
+  font-size: 13px;
+  max-width: 320px;
+}

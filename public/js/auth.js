@@ -44,6 +44,12 @@ document.documentElement.style.visibility = 'hidden';
       link.textContent = 'จัดการผู้ใช้งาน';
       if (location.pathname.endsWith('users.html')) link.className = 'active';
       nav.appendChild(link);
+
+      const auditLink = document.createElement('a');
+      auditLink.href = 'audit.html';
+      auditLink.textContent = 'บันทึกการใช้งาน';
+      if (location.pathname.endsWith('audit.html')) auditLink.className = 'active';
+      nav.appendChild(auditLink);
     }
 
     if (!nav) return;

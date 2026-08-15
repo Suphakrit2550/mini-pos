@@ -24,3 +24,7 @@
   margin: 0 0 16px;
   font-size: 18px;
 }
+
+.settings-card .owner-select-wrap {
+  margin-bottom: 16px;
+}

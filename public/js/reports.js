@@ -1,9 +1,12 @@
 // ไฟล์นี้ทำหน้าที่: หน้ารายงานยอดขาย (reports.html)
 // - เลือกช่วงวันที่ แล้วดึงสรุปยอดขาย/กำไร/จำนวนออเดอร์ ยอดขายรายวัน และสินค้าขายดี จาก API /api/reports/summary
 // - แสดงรายการสินค้าที่ใกล้หมดสต็อกจาก /api/reports/low-stock
+// - แอดมินดูรวมทุกบัญชี (ค่าเริ่มต้น) หรือกรองดูของพนักงานคนใดคนหนึ่งได้ผ่าน ownerSelect
 
 const fromDateInput = document.getElementById('fromDate');
 const toDateInput = document.getElementById('toDate');
+const ownerSelect = document.getElementById('ownerSelect');
+const ownerSelectWrap = document.getElementById('ownerSelectWrap');
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -12,13 +15,24 @@ function todayStr() {
 fromDateInput.value = todayStr();
 toDateInput.value = todayStr();
 
+async function setupOwnerSelect() {
+  if (window.currentUserRole !== 'admin') return;
+  const users = await api.getUsers();
+  ownerSelect.innerHTML = '<option value="">ทุกคน (รวมทั้งร้าน)</option>' + users.map((u) => `
+    <option value="${u.id}">${escapeHtml(u.username)}${u.username === window.currentUsername ? ' (คุณ)' : ''}${u.active ? '' : ' (ปิดใช้งาน)'}</option>
+  `).join('');
+  ownerSelectWrap.classList.remove('hidden');
+  ownerSelect.addEventListener('change', loadReports);
+}
+
 async function loadReports() {
   const from = fromDateInput.value;
   const to = toDateInput.value;
+  const userId = ownerSelect.value ? Number(ownerSelect.value) : null;
 
   const [summary, lowStock] = await Promise.all([
-    api.getSummary(from, to),
-    api.getLowStock(),
+    api.getSummary(from, to, userId),
+    api.getLowStock(userId),
   ]);
 
   document.getElementById('totalRevenue').textContent = `฿${formatCurrency(summary.revenue || 0)}`;
@@ -87,4 +101,13 @@ function escapeHtml(str) {
   return div.innerHTML;
 }
 
-loadReports();
+async function init() {
+  await setupOwnerSelect();
+  await loadReports();
+}
+
+if (window.currentUserId) {
+  init();
+} else {
+  window.addEventListener('pos-auth-ready', init, { once: true });
+}

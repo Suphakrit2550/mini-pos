@@ -42,6 +42,17 @@ function ownsSale(req, sale) {
   return req.user.role === 'admin' || sale.user_id === req.user.id;
 }
 
+// Staff always sell out of their own catalog. Admins sell out of their own
+// by default too, but may pass owner_id in the body to ring up a sale
+// against a specific staff member's catalog/stock instead — the sale is
+// recorded under that staff member's account, same as if they'd rung it up
+// themselves (same pattern as products.js/settings.js).
+function resolveOwnerId(req) {
+  const requested = req.body.owner_id;
+  if (req.user.role === 'admin' && requested) return Number(requested);
+  return req.user.id;
+}
+
 router.get('/', asyncHandler(async (req, res) => {
   const { from, to } = req.query;
   const itemCount = `(SELECT COUNT(*) FROM sale_items WHERE sale_items.sale_id = sales.id) AS item_count`;
@@ -90,6 +101,8 @@ router.post('/', asyncHandler(async (req, res) => {
     return res.status(400).json({ error: 'items are required' });
   }
 
+  const ownerId = resolveOwnerId(req);
+
   const client = await db.pool.connect();
   try {
     await client.query('BEGIN');
@@ -98,12 +111,12 @@ router.post('/', asyncHandler(async (req, res) => {
     const resolvedItems = [];
 
     for (const item of items) {
-      // Scoped to the seller's own catalog — a sale can only ring up items
-      // that account actually stocks, even if another account's product id
-      // is guessed.
+      // Scoped to the selling account's own catalog — a sale can only ring
+      // up items that account actually stocks, even if another account's
+      // product id is guessed.
       const { rows: [product] } = await client.query(
         'SELECT * FROM products WHERE id = $1 AND owner_id = $2',
-        [item.product_id, req.user.id]
+        [item.product_id, ownerId]
       );
       if (!product) throw new Error(`Product ${item.product_id} not found`);
       if (product.stock < item.quantity) {
@@ -129,7 +142,7 @@ router.post('/', asyncHandler(async (req, res) => {
     const { rows: [saleRow] } = await client.query(
       `INSERT INTO sales (user_id, customer_name, total_satang, payment_method, received_amount_satang, change_amount_satang)
        VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
-      [req.user.id, customer_name || null, totalSatang, payment_method || 'cash', receivedSatang, changeSatang]
+      [ownerId, customer_name || null, totalSatang, payment_method || 'cash', receivedSatang, changeSatang]
     );
     const saleId = saleRow.id;
 
