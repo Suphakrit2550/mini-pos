@@ -59,6 +59,27 @@ router.post('/setup', asyncHandler(async (req, res) => {
   res.json({ username, role: 'admin' });
 }));
 
+router.post('/register', asyncHandler(async (req, res) => {
+  const username = (req.body.username || '').trim();
+  const password = req.body.password || '';
+  if (!username) return res.status(400).json({ error: 'กรุณากรอกชื่อผู้ใช้' });
+  if (password.length < 6) return res.status(400).json({ error: 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร' });
+
+  const { rows: [existing] } = await db.query('SELECT id FROM users WHERE username = $1', [username]);
+  if (existing) return res.status(400).json({ error: 'ชื่อผู้ใช้นี้ถูกใช้ไปแล้ว' });
+
+  // Public sign-up always creates a plain 'staff' account scoped to its own
+  // data only (see resolveOwnerId in products.js etc.) — it can never see
+  // or manage anyone else's shop, and can't manage other users. Only an
+  // existing admin can promote someone to admin (users.html).
+  const { rows: [created] } = await db.query(
+    "INSERT INTO users (username, password_hash, role) VALUES ($1, $2, 'staff') RETURNING id",
+    [username, hashPassword(password)]
+  );
+  setSessionCookie(req, res, await createSession(created.id));
+  res.json({ username, role: 'staff' });
+}));
+
 router.post('/login', asyncHandler(async (req, res) => {
   const username = (req.body.username || '').trim();
   const password = req.body.password || '';
