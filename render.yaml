@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: mini-pos
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Skip the self-signed local HTTPS listener — Render terminates real,
+      # browser-trusted HTTPS in front of this app on its own. See the
+      # comment above ENABLE_LOCAL_HTTPS in server/index.js.
+      - key: ENABLE_LOCAL_HTTPS
+        value: "false"
+      # Set manually in the Render dashboard (Environment tab) — same value
+      # as the local .env file. Not stored in the repo since it's a secret.
+      - key: DATABASE_URL
+        sync: false
