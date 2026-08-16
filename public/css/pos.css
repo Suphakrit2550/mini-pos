@@ -35,6 +35,43 @@
   white-space: nowrap;
 }
 
+/* Horizontally-scrollable category filter chips, built from whatever
+   category values actually appear in the current catalog (see
+   setupCategoryTabs() in pos.js) — hidden entirely when a shop has no
+   categorized products, so an empty "ทั้งหมด"-only bar never shows. */
+.category-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  margin-bottom: 14px;
+  scrollbar-width: none;
+}
+
+.category-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.category-tab {
+  flex-shrink: 0;
+  padding: 9px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text-muted);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.category-tab.active {
+  background: var(--accent);
+  color: var(--accent-contrast);
+  border-color: var(--accent);
+}
+
 .product-grid {
   flex: 1;
   display: grid;

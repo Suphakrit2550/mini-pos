@@ -1,14 +1,17 @@
 // ไฟล์นี้ทำหน้าที่: หน้าขายหน้าร้าน (pos.html) — ส่วนหลักของระบบขาย
 // - แสดงกริดสินค้า ค้นหา/สแกนบาร์โค้ดเพื่อเพิ่มลงตะกร้า ปรับจำนวนในตะกร้าได้
+// - กรองสินค้าตามหมวดหมู่ผ่านแท็บด้านบนกริด (สร้างจากหมวดหมู่ที่มีอยู่จริงในร้านนั้นๆ)
 // - เปิดหน้าต่างชำระเงิน คำนวณเงินทอน แล้วยืนยันการขายผ่าน API /api/sales
 // - หลังขายสำเร็จ แสดงใบเสร็จในหน้าต่างและมีปุ่มพิมพ์ใบเสร็จ
 // - แอดมินเลือกขายแทนพนักงานคนอื่นได้ผ่าน ownerSelect (สินค้า/สต็อก/ยอดขายจะอยู่ในบัญชีของคนนั้น)
 
 let products = [];
 let cart = []; // { product_id, name, price, quantity, stock }
+let selectedCategory = null; // null = ทุกหมวดหมู่
 
 const productGrid = document.getElementById('productGrid');
 const searchInput = document.getElementById('search');
+const categoryTabsEl = document.getElementById('categoryTabs');
 const cartItemsEl = document.getElementById('cartItems');
 const cartTotalEl = document.getElementById('cartTotal');
 const checkoutBtn = document.getElementById('checkoutBtn');
@@ -47,8 +50,48 @@ async function setupOwnerSelect() {
   });
 }
 
+// Builds the category filter chips from whatever category values actually
+// appear in the current catalog — a shop with no categorized products never
+// gets an empty "ทั้งหมด"-only bar.
+function setupCategoryTabs() {
+  const categories = [...new Set(products.map(p => p.category).filter(Boolean))].sort();
+  if (categories.length === 0) {
+    categoryTabsEl.classList.add('hidden');
+    categoryTabsEl.innerHTML = '';
+    selectedCategory = null;
+    return;
+  }
+  if (selectedCategory && !categories.includes(selectedCategory)) {
+    selectedCategory = null;
+  }
+  categoryTabsEl.classList.remove('hidden');
+  categoryTabsEl.innerHTML = '';
+
+  // Built via DOM APIs (not an innerHTML template) so a category name typed
+  // in by a shop owner — free text, could contain quotes/HTML — can never
+  // break out of a markup attribute; textContent/dataset are never parsed
+  // as HTML.
+  const tabValues = [null, ...categories];
+  const fragment = document.createDocumentFragment();
+  tabValues.forEach((value) => {
+    const tab = document.createElement('button');
+    tab.type = 'button';
+    tab.className = 'category-tab' + (value === selectedCategory ? ' active' : '');
+    tab.textContent = value === null ? 'ทั้งหมด' : value;
+    tab.addEventListener('click', () => {
+      selectedCategory = value;
+      categoryTabsEl.querySelectorAll('.category-tab').forEach((t) => t.classList.remove('active'));
+      tab.classList.add('active');
+      renderProducts();
+    });
+    fragment.appendChild(tab);
+  });
+  categoryTabsEl.appendChild(fragment);
+}
+
 async function loadProducts() {
   products = await api.getProducts(true, selectedOwnerId());
+  setupCategoryTabs();
   renderProducts();
 }
 
@@ -60,6 +103,7 @@ async function init() {
 function renderProducts() {
   const term = searchInput.value.trim().toLowerCase();
   const filtered = products.filter(p => {
+    if (selectedCategory && p.category !== selectedCategory) return false;
     if (!term) return true;
     return p.name.toLowerCase().includes(term) || (p.name_en || '').toLowerCase().includes(term);
   });

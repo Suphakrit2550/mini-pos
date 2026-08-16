@@ -40,7 +40,7 @@ const Scanner = (() => {
     lastCode = null;
     lastTime = 0;
     document.getElementById('scannerModal').classList.remove('hidden');
-    setHint('เล็งกล้องไปที่บาร์โค้ดสินค้า');
+    setHint('ถือห่างจากบาร์โค้ดสัก 10-15 ซม. ให้กล้องโฟกัสได้');
 
     if (typeof Html5Qrcode === 'undefined') {
       showToast('โหลดตัวสแกนบาร์โค้ดไม่สำเร็จ');
@@ -86,6 +86,19 @@ const Scanner = (() => {
         () => {}
       );
       scanning = true;
+
+      // Some Android cameras default to a single fixed focus taken when the
+      // stream opens instead of refocusing as the phone moves — asking for
+      // continuous autofocus fixes the "blurry once I get close" symptom.
+      // Unsupported almost everywhere else (notably iOS Safari, which never
+      // exposes focus control to web pages), so this is best-effort: an
+      // unsupported constraint here is dropped silently per spec, and the
+      // try/catch covers browsers that throw instead of ignoring it.
+      try {
+        await html5Qrcode.applyVideoConstraints({ advanced: [{ focusMode: 'continuous' }] });
+      } catch (e) {
+        // ignore — camera doesn't support runtime focus control
+      }
     } catch (err) {
       showToast('เปิดกล้องไม่สำเร็จ: ' + (err.message || err));
       close();
