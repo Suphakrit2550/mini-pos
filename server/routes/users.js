@@ -131,15 +131,24 @@ router.delete('/:id', asyncHandler(async (req, res) => {
     return res.status(400).json({ error: 'ต้องมีแอดมินอย่างน้อย 1 คนเสมอ' });
   }
 
-  const { rows: [{ c: productCount }] } = await db.query('SELECT COUNT(*) AS c FROM products WHERE owner_id = $1', [target.id]);
-  const { rows: [{ c: saleCount }] } = await db.query('SELECT COUNT(*) AS c FROM sales WHERE user_id = $1', [target.id]);
-  if (Number(productCount) > 0 || Number(saleCount) > 0) {
-    return res.status(400).json({
-      error: `ลบไม่ได้ เพราะบัญชีนี้ยังมีสินค้า ${productCount} รายการ และประวัติการขาย ${saleCount} รายการอยู่ — ลบสินค้าออกให้หมดก่อน (ประวัติการขายจะไม่ถูกลบเองไม่ว่ากรณีใด) หากต้องการแค่ปิดกั้นการเข้าใช้งาน ใช้ "ปิดใช้งาน" แทนได้`,
-    });
-  }
+  // Deleting the account cascades its own product catalog (owner_id ON
+  // DELETE CASCADE — see server/db.js) — grab those products' image ids
+  // first so the matching product_images rows (not covered by the
+  // cascade, since products.image is just a path string, not a real FK)
+  // don't get left behind as orphaned blobs once the products are gone.
+  // Sales stay on the books as history (user_id ON DELETE SET NULL).
+  const { rows: images } = await db.query(
+    `SELECT (regexp_match(image, '^/uploads/(\\d+)$'))[1]::int AS image_id
+     FROM products WHERE owner_id = $1 AND image LIKE '/uploads/%'`,
+    [target.id]
+  );
 
   await db.query('DELETE FROM users WHERE id = $1', [target.id]);
+
+  if (images.length > 0) {
+    await db.query('DELETE FROM product_images WHERE id = ANY($1)', [images.map((r) => r.image_id)]);
+  }
+
   await logAudit({ entityType: 'user', entityId: target.id, action: 'delete', actor: req.user.username, detail: { username: target.username } });
   res.status(204).end();
 }));

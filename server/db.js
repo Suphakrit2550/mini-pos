@@ -58,7 +58,7 @@ const SCHEMA = `
 
   CREATE TABLE IF NOT EXISTS products (
     id SERIAL PRIMARY KEY,
-    owner_id INTEGER REFERENCES users(id),
+    owner_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     name_en TEXT,
     sku TEXT,
@@ -96,7 +96,7 @@ const SCHEMA = `
   -- gaps or reuse. Cancel/refund is a status change (voided_*), not a delete.
   CREATE TABLE IF NOT EXISTS sales (
     id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id),
+    user_id INTEGER REFERENCES users(id) ON DELETE SET NULL,
     customer_name TEXT,
     total_satang INTEGER NOT NULL,
     payment_method TEXT NOT NULL DEFAULT 'cash',
@@ -186,9 +186,38 @@ async function migrateSettingsToPerAccount() {
   }
 }
 
+// Deleting a user used to be blocked at the database level whenever they
+// still owned products or sales (no ON DELETE clause = Postgres's default
+// NO ACTION, which raises a foreign key error). Admins can now delete an
+// account outright — its own catalog goes with it (owner_id CASCADE), but
+// sales stay on the books as historical records, just no longer tied to a
+// user (user_id SET NULL). This retargets the FK on any database created
+// before that change; a fresh database already gets the right clause from
+// SCHEMA above, so this is a no-op there.
+async function migrateOwnerDeleteBehavior() {
+  async function retarget(table, column, deleteAction) {
+    const { rows: [fk] } = await pool.query(
+      `SELECT con.conname, con.confdeltype
+       FROM pg_constraint con
+       JOIN pg_class rel ON rel.oid = con.conrelid
+       JOIN pg_attribute att ON att.attrelid = con.conrelid AND att.attnum = ANY(con.conkey)
+       WHERE con.contype = 'f' AND rel.relname = $1 AND att.attname = $2`,
+      [table, column]
+    );
+    if (!fk || fk.confdeltype === deleteAction) return;
+    await pool.query(`ALTER TABLE ${table} DROP CONSTRAINT ${fk.conname}`);
+    const clause = deleteAction === 'c' ? 'ON DELETE CASCADE' : 'ON DELETE SET NULL';
+    await pool.query(`ALTER TABLE ${table} ADD CONSTRAINT ${table}_${column}_fkey FOREIGN KEY (${column}) REFERENCES users(id) ${clause}`);
+  }
+
+  await retarget('products', 'owner_id', 'c');
+  await retarget('sales', 'user_id', 'n');
+}
+
 async function initSchema() {
   await migrateSettingsToPerAccount();
   await pool.query(SCHEMA);
+  await migrateOwnerDeleteBehavior();
 }
 
 module.exports = { pool, query, initSchema };

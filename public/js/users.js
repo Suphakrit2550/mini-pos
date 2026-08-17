@@ -224,11 +224,15 @@ document.getElementById('cancelDeleteUser').addEventListener('click', () => {
   deleteUserModal.classList.add('hidden');
 });
 
-document.getElementById('confirmDeleteUser').addEventListener('click', async () => {
+const confirmDeleteUserBtn = document.getElementById('confirmDeleteUser');
+
+confirmDeleteUserBtn.addEventListener('click', async () => {
   if (!fieldDeleteConfirmPassword.value) {
     showToast('กรุณาใส่รหัสผ่านของคุณเพื่อยืนยัน');
     return;
   }
+  confirmDeleteUserBtn.disabled = true;
+  confirmDeleteUserBtn.textContent = 'กำลังลบ...';
   try {
     await api.deleteUser(deleteTargetId, fieldDeleteConfirmPassword.value);
     deleteUserModal.classList.add('hidden');
@@ -236,6 +240,9 @@ document.getElementById('confirmDeleteUser').addEventListener('click', async () 
     await loadUsers();
   } catch (err) {
     showToast(err.message);
+  } finally {
+    confirmDeleteUserBtn.disabled = false;
+    confirmDeleteUserBtn.textContent = 'ยืนยันลบ';
   }
 });
 
