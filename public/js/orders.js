@@ -168,12 +168,16 @@ document.getElementById('cancelVoid').addEventListener('click', () => {
   voidModal.classList.add('hidden');
 });
 
-document.getElementById('confirmVoid').addEventListener('click', async () => {
+const confirmVoidBtn = document.getElementById('confirmVoid');
+
+confirmVoidBtn.addEventListener('click', async () => {
   const actor = voidActorInput.value.trim();
   const reason = voidReasonInput.value.trim();
   if (!actor) return showToast('กรุณาระบุชื่อผู้ดำเนินการ');
   if (!reason) return showToast('กรุณาระบุเหตุผล');
 
+  confirmVoidBtn.disabled = true;
+  confirmVoidBtn.textContent = pendingVoidAction === 'cancel' ? 'กำลังยกเลิก...' : 'กำลังคืนเงิน...';
   try {
     await api.voidSale(currentSaleId, pendingVoidAction, actor, reason);
     setDefaultActor(actor);
@@ -183,6 +187,9 @@ document.getElementById('confirmVoid').addEventListener('click', async () => {
     await loadOrders();
   } catch (err) {
     showToast(err.message);
+  } finally {
+    confirmVoidBtn.disabled = false;
+    confirmVoidBtn.textContent = 'ยืนยัน';
   }
 });
 
