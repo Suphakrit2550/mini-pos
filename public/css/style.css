@@ -173,9 +173,13 @@ a {
   order: -1;
 }
 
-/* Phones — collapse the nav links behind a hamburger button instead of
-   letting 5-6 links + theme/user controls overflow the topbar. */
-@media (max-width: 640px) {
+/* Phones and portrait iPad (up to ~834px, the widest common portrait iPad
+   viewport) — collapse the nav links behind a hamburger button instead of
+   letting 7-8 links (5 base + "จัดการผู้ใช้งาน"/"บันทึกการใช้งาน" for
+   admins) + theme/user controls wrap mid-word across two lines in the
+   topbar. Landscape iPad and wider stay as an inline row, which has room
+   to spare. */
+@media (max-width: 900px) {
   .nav-toggle {
     display: flex;
   }
@@ -298,6 +302,12 @@ a {
   font-size: 14px;
   color: var(--text-muted);
   font-weight: 500;
+  /* Thai script has no spaces between words, so a long label like
+     "แจ้งเตือนเมื่อเหลือ" is one unbreakable run of text by default —
+     without this, the browser treats that whole label as its minimum
+     content width and refuses to shrink it, pushing .field-row's columns
+     out of alignment (or past the modal edge) instead of wrapping. */
+  overflow-wrap: break-word;
 }
 
 .field input,
@@ -325,6 +335,11 @@ a {
 
 .field-row .field {
   flex: 1;
+  /* Flex items default to min-width: auto, which is their content's
+     min-content size — combined with the unbreakable-Thai-label issue
+     above, that let a long label's width win over the 50/50 split flex: 1
+     is supposed to give. This makes flex: 1 the actual authority on width. */
+  min-width: 0;
 }
 
 @media (max-width: 480px) {
