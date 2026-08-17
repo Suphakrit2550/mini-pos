@@ -99,6 +99,13 @@ a {
   align-items: center;
   justify-content: space-between;
   padding: 12px 20px;
+  /* Standalone launch (see apple-mobile-web-app-* meta tags) draws the
+     status bar as a translucent overlay on top of the page instead of
+     pushing content down — without this, the topbar sits flush under the
+     iPad/iPhone's clock/battery and is awkward to tap near the top edge.
+     env() falls back to 0 on browsers/devices without a safe area (e.g.
+     plain desktop Safari tabs), so this is a no-op there. */
+  padding-top: calc(12px + env(safe-area-inset-top));
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
