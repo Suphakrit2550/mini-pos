@@ -8,6 +8,9 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 20px;
+  /* Same standalone-launch status bar overlap as .topbar in style.css —
+     see that comment for why this is needed. */
+  padding-top: calc(12px + env(safe-area-inset-top));
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   position: sticky;
