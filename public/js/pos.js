@@ -241,7 +241,6 @@ checkoutBtn.addEventListener('click', () => {
   receivedInput.value = '';
   changeAmountEl.textContent = '฿0.00';
   checkoutModal.classList.remove('hidden');
-  receivedInput.focus();
 });
 
 document.getElementById('cancelCheckout').addEventListener('click', () => {
@@ -256,7 +255,24 @@ document.querySelectorAll('.quick-cash-btn').forEach(btn => {
   });
 });
 
-receivedInput.addEventListener('input', updateChange);
+// On-screen numpad for "รับเงินมา" — receivedInput is readonly (see
+// index.html) so the iPad/iPhone's own keyboard never pops up; every digit
+// comes from tapping these buttons instead, same math either way.
+document.querySelectorAll('.numpad-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const key = btn.dataset.key;
+    if (key === 'back') {
+      receivedInput.value = receivedInput.value.slice(0, -1);
+    } else if (key === '.') {
+      if (!receivedInput.value.includes('.')) receivedInput.value += '.';
+    } else {
+      const decimals = receivedInput.value.split('.')[1];
+      if (decimals && decimals.length >= 2) return; // สตางค์มีแค่ 2 หลัก
+      receivedInput.value += key;
+    }
+    updateChange();
+  });
+});
 
 function updateChange() {
   const received = parseFloat(receivedInput.value) || 0;
@@ -271,6 +287,7 @@ confirmCheckoutBtn.addEventListener('click', async () => {
     return;
   }
   confirmCheckoutBtn.disabled = true;
+  confirmCheckoutBtn.textContent = 'กำลังชำระเงิน...';
   try {
     const payload = {
       items: cart.map(c => ({ product_id: c.product_id, quantity: c.quantity })),
@@ -289,6 +306,7 @@ confirmCheckoutBtn.addEventListener('click', async () => {
     showToast(err.message);
   } finally {
     confirmCheckoutBtn.disabled = false;
+    confirmCheckoutBtn.textContent = 'ยืนยันชำระเงิน';
   }
 });
 

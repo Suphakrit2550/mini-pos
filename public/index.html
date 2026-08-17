@@ -81,7 +81,7 @@
 
     <div class="field">
       <label>รับเงินมา (บาท)</label>
-      <input type="number" id="receivedInput" inputmode="decimal" placeholder="0.00">
+      <input type="text" inputmode="none" id="receivedInput" readonly placeholder="0.00">
     </div>
 
     <div class="quick-cash">
@@ -89,6 +89,21 @@
       <button class="btn quick-cash-btn" data-amount="100">100</button>
       <button class="btn quick-cash-btn" data-amount="500">500</button>
       <button class="btn quick-cash-btn" data-amount="1000">1000</button>
+    </div>
+
+    <div class="numpad" id="receivedNumpad">
+      <button type="button" class="numpad-btn" data-key="1">1</button>
+      <button type="button" class="numpad-btn" data-key="2">2</button>
+      <button type="button" class="numpad-btn" data-key="3">3</button>
+      <button type="button" class="numpad-btn" data-key="4">4</button>
+      <button type="button" class="numpad-btn" data-key="5">5</button>
+      <button type="button" class="numpad-btn" data-key="6">6</button>
+      <button type="button" class="numpad-btn" data-key="7">7</button>
+      <button type="button" class="numpad-btn" data-key="8">8</button>
+      <button type="button" class="numpad-btn" data-key="9">9</button>
+      <button type="button" class="numpad-btn" data-key=".">.</button>
+      <button type="button" class="numpad-btn" data-key="0">0</button>
+      <button type="button" class="numpad-btn numpad-btn-back" data-key="back" aria-label="ลบ">⌫</button>
     </div>
 
     <div class="change-row">

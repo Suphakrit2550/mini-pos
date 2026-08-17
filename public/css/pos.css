@@ -383,6 +383,38 @@
   font-size: 14px;
 }
 
+/* On-screen keypad for "รับเงินมา" (receivedInput is readonly — see
+   index.html/pos.js) so iPad/iPhone never pops up their own keyboard;
+   bigger touch targets than quick-cash-btn since this is the primary way
+   to enter a custom amount now. */
+.numpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 18px;
+}
+
+.numpad-btn {
+  height: 52px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.numpad-btn:active {
+  background: var(--bg);
+}
+
+.numpad-btn-back {
+  font-size: 18px;
+  color: var(--text-muted);
+}
+
 .change-row {
   display: flex;
   justify-content: space-between;
