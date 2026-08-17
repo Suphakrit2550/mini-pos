@@ -383,6 +383,12 @@
   font-size: 14px;
 }
 
+/* "พอดี" (exact amount) is the one shoppers tap most — make it read as the
+   obvious choice at a glance instead of blending in with 100/500/1000. */
+.quick-cash-btn.btn-primary {
+  font-weight: 700;
+}
+
 /* On-screen keypad for "รับเงินมา" (receivedInput is readonly — see
    index.html/pos.js) so iPad/iPhone never pops up their own keyboard;
    bigger touch targets than quick-cash-btn since this is the primary way
@@ -410,9 +416,16 @@
   background: var(--bg);
 }
 
+.numpad-btn-back:active {
+  background: var(--danger-bg);
+  opacity: 0.7;
+}
+
 .numpad-btn-back {
-  font-size: 18px;
-  color: var(--text-muted);
+  font-size: 26px;
+  color: var(--danger);
+  background: var(--danger-bg);
+  border-color: var(--danger-bg);
 }
 
 .change-row {
