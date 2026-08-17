@@ -211,6 +211,8 @@ document.getElementById('cancelProduct').addEventListener('click', () => {
   productModal.classList.add('hidden');
 });
 
+const submitProductBtn = document.getElementById('submitProduct');
+
 productForm.addEventListener('submit', async (e) => {
   e.preventDefault();
   const isEdit = !!fields.id.value;
@@ -237,6 +239,8 @@ productForm.addEventListener('submit', async (e) => {
     payload.owner_id = selectedOwnerId();
   }
 
+  submitProductBtn.disabled = true;
+  submitProductBtn.textContent = 'กำลังบันทึก...';
   try {
     let productId = fields.id.value;
     if (productId) {
@@ -257,6 +261,9 @@ productForm.addEventListener('submit', async (e) => {
     await loadProducts();
   } catch (err) {
     showToast(err.message);
+  } finally {
+    submitProductBtn.disabled = false;
+    submitProductBtn.textContent = 'บันทึก';
   }
 });
 
@@ -281,12 +288,16 @@ document.getElementById('cancelDelete').addEventListener('click', () => {
   deleteModal.classList.add('hidden');
 });
 
-document.getElementById('confirmDelete').addEventListener('click', async () => {
+const confirmDeleteBtn = document.getElementById('confirmDelete');
+
+confirmDeleteBtn.addEventListener('click', async () => {
   const actor = deleteActorInput.value.trim();
   const reason = deleteReasonInput.value.trim();
   if (!actor) return showToast('กรุณาระบุชื่อผู้ดำเนินการ');
   if (!reason) return showToast('กรุณาระบุเหตุผล');
 
+  confirmDeleteBtn.disabled = true;
+  confirmDeleteBtn.textContent = 'กำลังลบ...';
   try {
     await api.deleteProduct(deleteTargetId, actor, reason);
     setDefaultActor(actor);
@@ -295,6 +306,9 @@ document.getElementById('confirmDelete').addEventListener('click', async () => {
     await loadProducts();
   } catch (err) {
     showToast(err.message);
+  } finally {
+    confirmDeleteBtn.disabled = false;
+    confirmDeleteBtn.textContent = 'ยืนยันลบ';
   }
 });
 
@@ -321,7 +335,9 @@ document.getElementById('cancelStock').addEventListener('click', () => {
   stockModal.classList.add('hidden');
 });
 
-document.getElementById('confirmStock').addEventListener('click', async () => {
+const confirmStockBtn = document.getElementById('confirmStock');
+
+confirmStockBtn.addEventListener('click', async () => {
   const change = parseInt(stockChangeInput.value, 10);
   if (!Number.isInteger(change) || change === 0) {
     showToast('กรุณาระบุจำนวนที่ต้องการปรับ');
@@ -332,6 +348,8 @@ document.getElementById('confirmStock').addEventListener('click', async () => {
     showToast('กรุณาระบุชื่อผู้ดำเนินการ');
     return;
   }
+  confirmStockBtn.disabled = true;
+  confirmStockBtn.textContent = 'กำลังบันทึก...';
   try {
     await api.adjustStock(stockTargetId, change, actor, stockReasonInput.value.trim());
     setDefaultActor(actor);
@@ -340,6 +358,9 @@ document.getElementById('confirmStock').addEventListener('click', async () => {
     await loadProducts();
   } catch (err) {
     showToast(err.message);
+  } finally {
+    confirmStockBtn.disabled = false;
+    confirmStockBtn.textContent = 'บันทึก';
   }
 });
 
