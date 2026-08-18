@@ -7,4 +7,8 @@ set -euo pipefail
 
 PROJECT_DIR="/Users/suphakritouamsiri/mini-pos"
 cd "$PROJECT_DIR"
-node --env-file=.env scripts/backup.js
+# launchd runs this with a minimal environment that doesn't include
+# /usr/local/bin in PATH, so plain `node` fails with "command not found" —
+# this silently broke every scheduled backup from 2026-08-14 onward. The
+# absolute path sidesteps PATH resolution entirely.
+/usr/local/bin/node --env-file=.env scripts/backup.js
