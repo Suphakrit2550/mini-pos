@@ -3,6 +3,12 @@ services:
     name: mini-pos
     runtime: node
     plan: free
+    # Region can't be changed on an existing service (Render limitation) —
+    # this only takes effect for a brand-new service created from this
+    # blueprint. Singapore is Render's closest region to Thailand and to
+    # the Supabase DB (ap-southeast-1), for lower latency than the US
+    # region the original service landed in by default.
+    region: singapore
     buildCommand: npm install
     startCommand: npm start
     envVars:
