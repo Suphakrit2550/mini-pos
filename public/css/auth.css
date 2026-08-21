@@ -47,6 +47,34 @@
   width: 100%;
   max-width: 360px;
   padding: 32px 28px;
+  /* The card is the one thing on the page — give it more lift than an
+     ordinary .card so it reads as the clear focal point. */
+  box-shadow: var(--shadow-lg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .auth-card {
+    animation: auth-card-in 0.3s ease both;
+  }
+}
+
+@keyframes auth-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+.auth-logo {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  background: var(--accent-soft);
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
 }
 
 .auth-card h1 {

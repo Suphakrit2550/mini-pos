@@ -64,12 +64,20 @@
   font-family: inherit;
   white-space: nowrap;
   cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .category-tab.active {
   background: var(--accent);
   color: var(--accent-contrast);
   border-color: var(--accent);
+}
+
+@media (hover: hover) {
+  .category-tab:not(.active):hover {
+    border-color: var(--accent);
+    color: var(--text);
+  }
 }
 
 .product-grid {
@@ -85,6 +93,7 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
   padding: 14px;
   cursor: pointer;
   display: flex;
@@ -99,12 +108,19 @@
      of it with room to spare, every card, no exceptions to compute. */
   height: 240px;
   overflow: hidden;
-  transition: transform 0.05s ease, border-color 0.1s ease;
+  transition: transform 0.05s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .product-card:active {
   transform: scale(0.96);
   border-color: var(--accent);
+}
+
+@media (hover: hover) {
+  .product-card:hover {
+    border-color: var(--accent);
+    box-shadow: var(--shadow-md);
+  }
 }
 
 .product-card.out-of-stock {
@@ -169,6 +185,7 @@
   display: flex;
   flex-direction: column;
   margin: 16px 16px 16px 0;
+  box-shadow: var(--shadow-md);
 }
 
 /* Drag-handle bar on the cart panel, mobile only — tap it to expand the

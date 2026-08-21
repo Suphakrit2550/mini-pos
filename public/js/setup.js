@@ -3,6 +3,7 @@
 // - ตรวจสอบว่ารหัสผ่านที่กรอกสองช่องตรงกัน ก่อนส่งไปสร้างบัญชีผ่าน API /api/auth/setup
 
 const errorBox = document.getElementById('authError');
+const submitBtn = document.getElementById('submitBtn');
 
 function showAuthError(message) {
   errorBox.textContent = message;
@@ -24,15 +25,22 @@ document.getElementById('setupForm').addEventListener('submit', async (e) => {
     showAuthError('รหัสผ่านทั้งสองช่องไม่ตรงกัน');
     return;
   }
-  const res = await fetch('/api/auth/setup', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
-  });
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    showAuthError(data.error || 'สร้างบัญชีไม่สำเร็จ');
-    return;
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'กำลังสร้างบัญชี...';
+  try {
+    const res = await fetch('/api/auth/setup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      showAuthError(data.error || 'สร้างบัญชีไม่สำเร็จ');
+      return;
+    }
+    location.href = 'index.html';
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'สร้างบัญชี';
   }
-  location.href = 'index.html';
 });

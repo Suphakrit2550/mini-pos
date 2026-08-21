@@ -22,6 +22,7 @@
 <body>
 <div class="auth-page">
   <div class="card auth-card">
+    <div class="auth-logo"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l1-5h16l1 5"/><path d="M3 9a2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0"/><path d="M5 9v10h14V9"/><path d="M9 21v-6h6v6"/></svg></div>
     <h1>Mini POS</h1>
     <p class="muted">เข้าสู่ระบบเพื่อใช้งาน</p>
 
@@ -30,13 +31,13 @@
     <form id="loginForm">
       <div class="field">
         <label>ชื่อผู้ใช้</label>
-        <input type="text" id="fieldUsername" autocomplete="username" required>
+        <input type="text" id="fieldUsername" autocomplete="username" autofocus required>
       </div>
       <div class="field">
         <label>รหัสผ่าน</label>
         <input type="password" id="fieldPassword" autocomplete="current-password" required>
       </div>
-      <button type="submit" class="btn btn-primary btn-block">เข้าสู่ระบบ</button>
+      <button type="submit" class="btn btn-primary btn-block" id="submitBtn">เข้าสู่ระบบ</button>
     </form>
 
     <p class="muted" style="text-align:center; margin:18px 0 0;">

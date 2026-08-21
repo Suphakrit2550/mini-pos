@@ -4,6 +4,7 @@
 // - ถ้า login ไม่สำเร็จ จะโชว์ข้อความ error สีแดงใต้ฟอร์ม
 
 const errorBox = document.getElementById('authError');
+const submitBtn = document.getElementById('submitBtn');
 
 function showAuthError(message) {
   errorBox.textContent = message;
@@ -21,15 +22,22 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
   errorBox.classList.remove('show');
   const username = document.getElementById('fieldUsername').value;
   const password = document.getElementById('fieldPassword').value;
-  const res = await fetch('/api/auth/login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
-  });
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({}));
-    showAuthError(data.error || 'เข้าสู่ระบบไม่สำเร็จ');
-    return;
+  submitBtn.disabled = true;
+  submitBtn.textContent = 'กำลังเข้าสู่ระบบ...';
+  try {
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      showAuthError(data.error || 'เข้าสู่ระบบไม่สำเร็จ');
+      return;
+    }
+    location.href = 'index.html';
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'เข้าสู่ระบบ';
   }
-  location.href = 'index.html';
 });

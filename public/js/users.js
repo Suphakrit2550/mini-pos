@@ -36,7 +36,7 @@ function renderTable() {
       <td><span class="role-badge role-badge-${u.role}">${ROLE_LABELS[u.role] || u.role}</span></td>
       <td>
         <span class="status-badge status-badge-${u.active ? 'active' : 'inactive'}">${u.active ? 'เปิดใช้งาน' : 'ปิดใช้งาน'}</span>
-        ${locked ? '<span class="status-badge status-badge-locked">🔒 ล็อกชั่วคราว</span>' : ''}
+        ${locked ? '<span class="status-badge status-badge-locked"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>ล็อกชั่วคราว</span>' : ''}
       </td>
       <td>${formatDate(u.created_at)}</td>
       <td>

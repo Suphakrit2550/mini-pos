@@ -22,6 +22,7 @@
 <body>
 <div class="auth-page">
   <div class="card auth-card">
+    <div class="auth-logo"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9l1-5h16l1 5"/><path d="M3 9a2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0 2 2 0 0 0 4 0"/><path d="M5 9v10h14V9"/><path d="M9 21v-6h6v6"/></svg></div>
     <h1>ยินดีต้อนรับ</h1>
     <p class="muted">สร้างบัญชีผู้ดูแลระบบบัญชีแรกก่อนเริ่มใช้งาน</p>
 
@@ -30,7 +31,7 @@
     <form id="setupForm">
       <div class="field">
         <label>ชื่อผู้ใช้</label>
-        <input type="text" id="fieldUsername" autocomplete="username" required>
+        <input type="text" id="fieldUsername" autocomplete="username" autofocus required>
       </div>
       <div class="field">
         <label>รหัสผ่าน (อย่างน้อย 6 ตัวอักษร)</label>
@@ -40,7 +41,7 @@
         <label>ยืนยันรหัสผ่าน</label>
         <input type="password" id="fieldPasswordConfirm" autocomplete="new-password" minlength="6" required>
       </div>
-      <button type="submit" class="btn btn-primary btn-block">สร้างบัญชี</button>
+      <button type="submit" class="btn btn-primary btn-block" id="submitBtn">สร้างบัญชี</button>
     </form>
   </div>
 </div>

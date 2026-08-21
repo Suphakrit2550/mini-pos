@@ -1,4 +1,4 @@
-// ไฟล์นี้ทำหน้าที่: เปิด/ปิดเมนูแบบ hamburger บนหน้าจอมือถือ (ปุ่ม ☰ ในแถบเมนูบนสุด)
+// ไฟล์นี้ทำหน้าที่: เปิด/ปิดเมนูแบบ hamburger บนหน้าจอมือถือ (ปุ่มไอคอนเมนูในแถบเมนูบนสุด)
 // ใช้ร่วมกับ CSS ใน style.css (.nav-toggle / .nav.nav-open)
 
 document.addEventListener('DOMContentLoaded', () => {

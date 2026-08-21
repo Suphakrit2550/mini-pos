@@ -82,6 +82,25 @@ document.getElementById('printBtn').addEventListener('click', () => {
   window.print();
 });
 
+const printBluetoothBtn = document.getElementById('printBluetoothBtn');
+const printBluetoothLabel = document.getElementById('printBluetoothLabel');
+
+printBluetoothBtn.addEventListener('click', async () => {
+  const id = new URLSearchParams(location.search).get('id');
+  if (!id) return;
+  printBluetoothBtn.disabled = true;
+  printBluetoothLabel.textContent = 'กำลังพิมพ์...';
+  try {
+    await api.printSale(id);
+    showToast('ส่งพิมพ์แล้ว');
+  } catch (err) {
+    showToast(err.message);
+  } finally {
+    printBluetoothBtn.disabled = false;
+    printBluetoothLabel.textContent = 'พิมพ์ผ่านเครื่องพิมพ์';
+  }
+});
+
 document.getElementById('backBtn').addEventListener('click', () => {
   const from = new URLSearchParams(location.search).get('from');
   window.location.href = from === 'orders' ? 'orders.html' : 'index.html';
