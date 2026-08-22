@@ -114,14 +114,14 @@ function renderProducts() {
   }
 
   productGrid.innerHTML = filtered.map(p => `
-    <div class="product-card ${p.stock <= 0 ? 'out-of-stock' : ''}" data-id="${p.id}">
+    <div class="product-card ${p.stock !== null && p.stock <= 0 ? 'out-of-stock' : ''}" data-id="${p.id}">
       ${p.image
         ? `<img class="p-image" src="${escapeHtml(p.image)}" alt="">`
         : '<div class="p-image p-image-placeholder"></div>'}
       <div class="p-name">${escapeHtml(p.name)}</div>
       ${p.name_en ? `<div class="p-name-en">${escapeHtml(p.name_en)}</div>` : ''}
       <div class="p-price">฿${formatCurrency(p.price)}</div>
-      <div class="p-stock">คงเหลือ ${p.stock}</div>
+      <div class="p-stock">${p.stock === null ? 'ไม่ระบุจำนวน' : `คงเหลือ ${p.stock}`}</div>
     </div>
   `).join('');
 
@@ -132,11 +132,11 @@ function renderProducts() {
 
 function addToCart(productId) {
   const product = products.find(p => p.id === productId);
-  if (!product || product.stock <= 0) return;
+  if (!product || (product.stock !== null && product.stock <= 0)) return;
 
   const existing = cart.find(c => c.product_id === productId);
   if (existing) {
-    if (existing.quantity >= product.stock) {
+    if (product.stock !== null && existing.quantity >= product.stock) {
       showToast('สินค้าคงเหลือไม่พอ');
       return;
     }
@@ -153,7 +153,7 @@ function changeQty(productId, delta) {
   const newQty = item.quantity + delta;
   if (newQty <= 0) {
     cart = cart.filter(c => c.product_id !== productId);
-  } else if (newQty > item.stock) {
+  } else if (item.stock !== null && newQty > item.stock) {
     showToast('สินค้าคงเหลือไม่พอ');
     return;
   } else {

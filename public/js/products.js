@@ -4,10 +4,12 @@
 // - แสดงประวัติการแก้ไขสินค้าแต่ละชิ้นในหน้าต่างแก้ไข
 
 let products = [];
+let selectedCategory = null; // null = ทุกหมวดหมู่
 
 const tableBody = document.getElementById('productTableBody');
 const emptyState = document.getElementById('emptyState');
 const searchInput = document.getElementById('search');
+const categoryTabsEl = document.getElementById('categoryTabs');
 const ownerSelect = document.getElementById('ownerSelect');
 const ownerSelectWrap = document.getElementById('ownerSelectWrap');
 
@@ -26,8 +28,49 @@ async function setupOwnerSelect() {
   ownerSelect.addEventListener('change', loadProducts);
 }
 
+// Builds the category filter chips from whatever category values actually
+// appear in the current catalog — same behavior as the category tabs on the
+// sales page (pos.js) — so a shop with no categorized products never gets an
+// empty "ทั้งหมด"-only bar.
+function setupCategoryTabs() {
+  const categories = [...new Set(products.map(p => p.category).filter(Boolean))].sort();
+  if (categories.length === 0) {
+    categoryTabsEl.classList.add('hidden');
+    categoryTabsEl.innerHTML = '';
+    selectedCategory = null;
+    return;
+  }
+  if (selectedCategory && !categories.includes(selectedCategory)) {
+    selectedCategory = null;
+  }
+  categoryTabsEl.classList.remove('hidden');
+  categoryTabsEl.innerHTML = '';
+
+  // Built via DOM APIs (not an innerHTML template) so a category name typed
+  // in by a shop owner — free text, could contain quotes/HTML — can never
+  // break out of a markup attribute; textContent/dataset are never parsed
+  // as HTML.
+  const tabValues = [null, ...categories];
+  const fragment = document.createDocumentFragment();
+  tabValues.forEach((value) => {
+    const tab = document.createElement('button');
+    tab.type = 'button';
+    tab.className = 'category-tab' + (value === selectedCategory ? ' active' : '');
+    tab.textContent = value === null ? 'ทั้งหมด' : value;
+    tab.addEventListener('click', () => {
+      selectedCategory = value;
+      categoryTabsEl.querySelectorAll('.category-tab').forEach((t) => t.classList.remove('active'));
+      tab.classList.add('active');
+      renderTable();
+    });
+    fragment.appendChild(tab);
+  });
+  categoryTabsEl.appendChild(fragment);
+}
+
 async function loadProducts() {
   products = await api.getProducts(false, selectedOwnerId());
+  setupCategoryTabs();
   renderTable();
 }
 
@@ -39,6 +82,7 @@ async function init() {
 function renderTable() {
   const term = searchInput.value.trim().toLowerCase();
   const filtered = products.filter(p => {
+    if (selectedCategory && p.category !== selectedCategory) return false;
     if (!term) return true;
     return p.name.toLowerCase().includes(term) || (p.name_en || '').toLowerCase().includes(term);
   });
@@ -59,8 +103,8 @@ function renderTable() {
       <td>${escapeHtml(p.category || '-')}</td>
       <td class="text-right">฿${formatCurrency(p.price)}</td>
       <td class="text-right">
-        ${p.stock}
-        ${p.stock <= p.low_stock_threshold ? '<span class="badge badge-low">ใกล้หมด</span>' : ''}
+        ${p.stock === null ? '<span class="stock-unspecified">ไม่ระบุ</span>' : p.stock}
+        ${p.stock !== null && p.stock <= p.low_stock_threshold ? '<span class="badge badge-low">ใกล้หมด</span>' : ''}
       </td>
       <td>
         <div class="row-actions">
@@ -93,6 +137,7 @@ const fields = {
   price: document.getElementById('fieldPrice'),
   cost: document.getElementById('fieldCost'),
   stock: document.getElementById('fieldStock'),
+  stockUnspecified: document.getElementById('fieldStockUnspecified'),
   threshold: document.getElementById('fieldThreshold'),
   category: document.getElementById('fieldCategory'),
   barcode: document.getElementById('fieldBarcode'),
@@ -157,6 +202,20 @@ function setImagePreview(src) {
   }
 }
 
+// "ไม่ระบุจำนวน" — some items (e.g. sold by weight, made to order) can't be
+// counted as stock at all. Checking it disables/clears the number field so
+// the product is saved with stock = null instead of being forced to 0.
+function setStockUnspecified(flag) {
+  fields.stockUnspecified.checked = flag;
+  fields.stock.disabled = flag;
+  fields.stock.required = !flag;
+  if (flag) fields.stock.value = '';
+}
+
+fields.stockUnspecified.addEventListener('change', () => {
+  setStockUnspecified(fields.stockUnspecified.checked);
+});
+
 fields.image.addEventListener('change', () => {
   const file = fields.image.files[0];
   if (!file) return;
@@ -178,6 +237,7 @@ document.getElementById('addProductBtn').addEventListener('click', () => {
   productForm.reset();
   fields.id.value = '';
   fields.threshold.value = 5;
+  setStockUnspecified(false);
   setImagePreview(null);
   editAuditFields.classList.add('hidden');
   productModal.classList.remove('hidden');
@@ -193,7 +253,8 @@ function openEditModal(id) {
   fields.nameEn.value = p.name_en || '';
   fields.price.value = p.price;
   fields.cost.value = p.cost;
-  fields.stock.value = p.stock;
+  setStockUnspecified(p.stock === null);
+  fields.stock.value = p.stock === null ? '' : p.stock;
   fields.threshold.value = p.low_stock_threshold;
   fields.category.value = p.category || '';
   fields.barcode.value = p.barcode || '';
@@ -227,7 +288,7 @@ productForm.addEventListener('submit', async (e) => {
     name_en: fields.nameEn.value.trim(),
     price: parseFloat(fields.price.value),
     cost: parseFloat(fields.cost.value) || 0,
-    stock: parseInt(fields.stock.value, 10),
+    stock: fields.stockUnspecified.checked ? null : parseInt(fields.stock.value, 10),
     low_stock_threshold: parseInt(fields.threshold.value, 10) || 0,
     category: fields.category.value.trim(),
     barcode: fields.barcode.value.trim(),
@@ -323,6 +384,10 @@ let stockTargetId = null;
 function openStockModal(id) {
   const p = products.find(x => x.id === id);
   if (!p) return;
+  if (p.stock === null) {
+    showToast('สินค้านี้ไม่ได้ระบุจำนวนคงเหลือ กรุณาแก้ไขสินค้าเพื่อระบุจำนวนก่อน');
+    return;
+  }
   stockTargetId = id;
   stockProductName.textContent = `${p.name} — คงเหลือปัจจุบัน ${p.stock}`;
   stockChangeInput.value = '';

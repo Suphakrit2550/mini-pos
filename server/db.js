@@ -66,7 +66,10 @@ const SCHEMA = `
     barcode TEXT,
     price_satang INTEGER NOT NULL,
     cost_satang INTEGER NOT NULL DEFAULT 0,
-    stock INTEGER NOT NULL DEFAULT 0,
+    -- NULL means "ไม่ระบุจำนวน" (stock not tracked for this item) — sales
+    -- skip the insufficient-stock check and stay unlimited for it instead
+    -- of treating the missing value as zero.
+    stock INTEGER DEFAULT 0,
     low_stock_threshold INTEGER NOT NULL DEFAULT 5,
     image TEXT,
     active BOOLEAN NOT NULL DEFAULT TRUE,
@@ -214,10 +217,20 @@ async function migrateOwnerDeleteBehavior() {
   await retarget('sales', 'user_id', 'n');
 }
 
+// products.stock used to be NOT NULL — this lifts that constraint on a
+// database created before NULL ("ไม่ระบุจำนวน") was a valid value. A fresh
+// database already gets the nullable column from SCHEMA above, and DROP
+// CONSTRAINT IF EXISTS-style ALTERs are safe to re-run, so this is a no-op
+// once migrated.
+async function migrateStockNullable() {
+  await pool.query('ALTER TABLE products ALTER COLUMN stock DROP NOT NULL');
+}
+
 async function initSchema() {
   await migrateSettingsToPerAccount();
   await pool.query(SCHEMA);
   await migrateOwnerDeleteBehavior();
+  await migrateStockNullable();
 }
 
 module.exports = { pool, query, initSchema };

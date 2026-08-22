@@ -123,7 +123,7 @@ router.post('/', asyncHandler(async (req, res) => {
         barcode || null,
         toSatang(price),
         toSatang(cost || 0),
-        stock || 0,
+        stock === null ? null : (stock || 0),
         low_stock_threshold ?? 5,
         image || null,
       ]
@@ -273,6 +273,9 @@ router.post('/:id/stock', asyncHandler(async (req, res) => {
   const { rows: [existing] } = await db.query('SELECT * FROM products WHERE id = $1', [req.params.id]);
   if (!existing) return res.status(404).json({ error: 'Product not found' });
   if (!ownsProduct(req, existing)) return res.status(403).json({ error: 'ไม่มีสิทธิ์แก้ไขสินค้านี้' });
+  if (existing.stock === null) {
+    return res.status(400).json({ error: 'สินค้านี้ไม่ได้ระบุจำนวนคงเหลือ กรุณาแก้ไขสินค้าเพื่อระบุจำนวนก่อน' });
+  }
 
   const newStock = existing.stock + change;
   if (newStock < 0) {

@@ -119,7 +119,9 @@ router.post('/', asyncHandler(async (req, res) => {
         [item.product_id, ownerId]
       );
       if (!product) throw new Error(`Product ${item.product_id} not found`);
-      if (product.stock < item.quantity) {
+      // NULL stock means the item isn't tracked ("ไม่ระบุจำนวน") — treat it
+      // as always available instead of coercing NULL to 0 and blocking every sale.
+      if (product.stock !== null && product.stock < item.quantity) {
         throw new Error(`Insufficient stock for ${product.name}`);
       }
       const subtotalSatang = product.price_satang * item.quantity;

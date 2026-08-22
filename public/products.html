@@ -49,6 +49,8 @@
         <button class="btn btn-primary" id="addProductBtn">+ เพิ่มสินค้า</button>
       </div>
 
+      <div id="categoryTabs" class="category-tabs hidden"></div>
+
       <div class="card">
         <div class="table-wrap">
           <table>
@@ -106,6 +108,10 @@
         <div class="field">
           <label>จำนวนคงเหลือ</label>
           <input type="number" id="fieldStock" min="0" required>
+          <label class="checkbox-label">
+            <input type="checkbox" id="fieldStockUnspecified">
+            <span>ไม่ระบุจำนวน (สินค้าบางอย่างนับสต็อกไม่ได้)</span>
+          </label>
         </div>
         <div class="field">
           <label>แจ้งเตือนเมื่อเหลือ</label>
