@@ -141,8 +141,25 @@
 
 .image-picker input[type="file"] {
   flex: 1;
+  min-width: 0;
+  max-width: 100%;
   font-size: 14px;
   font-family: inherit;
+}
+
+/* On a narrow phone screen the native file input's "no file chosen" label
+   is wider than a flex row can shrink it to (file inputs ignore min-width:0
+   for their own contents), which pushed the row past the modal's edge and
+   forced horizontal scrolling. Stacking it under the preview instead gives
+   it the full row width to shrink into. */
+@media (max-width: 480px) {
+  .image-picker {
+    flex-wrap: wrap;
+  }
+
+  .image-picker input[type="file"] {
+    flex-basis: 100%;
+  }
 }
 
 .history-list {
