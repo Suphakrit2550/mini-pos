@@ -201,6 +201,51 @@
   white-space: nowrap;
 }
 
+/* Suggestion dropdown for the "หมวดหมู่" field — lists category names
+   already used elsewhere in the catalog so a phone keyboard (where retyping
+   an exact name is fiddly, and iOS Safari doesn't reliably support the
+   native <datalist> suggestion UI) can just tap one instead. */
+.category-field {
+  position: relative;
+}
+
+.category-suggestions {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 5;
+  max-height: 180px;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-lg);
+}
+
+.category-suggestion {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 10px 14px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-size: 15px;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.category-suggestion:not(:last-child) {
+  border-bottom: 1px solid var(--border);
+}
+
+@media (hover: hover) {
+  .category-suggestion:hover {
+    background: var(--bg);
+  }
+}
+
 .checkbox-label {
   display: flex;
   align-items: center;

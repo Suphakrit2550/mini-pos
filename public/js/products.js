@@ -28,19 +28,37 @@ async function setupOwnerSelect() {
   ownerSelect.addEventListener('change', loadProducts);
 }
 
+// "" (empty string) is the sentinel for the "ไม่มีหมวดหมู่" tab — products with no
+// category set — kept distinct from null, which means "ทั้งหมด" (every
+// product, categorized or not). Real category values are never empty
+// (filtered out below), so the two can never collide.
+const UNCATEGORIZED = '';
+
+function getKnownCategories() {
+  return [...new Set(products.map(p => p.category).filter(Boolean))].sort();
+}
+
 // Builds the category filter chips from whatever category values actually
 // appear in the current catalog — same behavior as the category tabs on the
 // sales page (pos.js) — so a shop with no categorized products never gets an
-// empty "ทั้งหมด"-only bar.
+// empty "ทั้งหมด"-only bar. Also adds a "ไม่มีหมวดหมู่" tab for products that have
+// no category yet, so it's easy to find what's still left to categorize.
 function setupCategoryTabs() {
-  const categories = [...new Set(products.map(p => p.category).filter(Boolean))].sort();
-  if (categories.length === 0) {
+  const categories = getKnownCategories();
+  const hasUncategorized = products.some(p => !p.category);
+  // Hidden only when there's truly nothing to filter (no products at all) —
+  // unlike the sales page, this page should always offer a "ไม่มีหมวดหมู่" tab once
+  // there's at least one uncategorized product, even if no category has been
+  // named yet.
+  if (categories.length === 0 && !hasUncategorized) {
     categoryTabsEl.classList.add('hidden');
     categoryTabsEl.innerHTML = '';
     selectedCategory = null;
     return;
   }
-  if (selectedCategory && !categories.includes(selectedCategory)) {
+  if (selectedCategory === UNCATEGORIZED) {
+    if (!hasUncategorized) selectedCategory = null;
+  } else if (selectedCategory && !categories.includes(selectedCategory)) {
     selectedCategory = null;
   }
   categoryTabsEl.classList.remove('hidden');
@@ -50,13 +68,13 @@ function setupCategoryTabs() {
   // in by a shop owner — free text, could contain quotes/HTML — can never
   // break out of a markup attribute; textContent/dataset are never parsed
   // as HTML.
-  const tabValues = [null, ...categories];
+  const tabValues = [null, ...(hasUncategorized ? [UNCATEGORIZED] : []), ...categories];
   const fragment = document.createDocumentFragment();
   tabValues.forEach((value) => {
     const tab = document.createElement('button');
     tab.type = 'button';
     tab.className = 'category-tab' + (value === selectedCategory ? ' active' : '');
-    tab.textContent = value === null ? 'ทั้งหมด' : value;
+    tab.textContent = value === null ? 'ทั้งหมด' : value === UNCATEGORIZED ? 'ไม่มีหมวดหมู่' : value;
     tab.addEventListener('click', () => {
       selectedCategory = value;
       categoryTabsEl.querySelectorAll('.category-tab').forEach((t) => t.classList.remove('active'));
@@ -82,7 +100,8 @@ async function init() {
 function renderTable() {
   const term = searchInput.value.trim().toLowerCase();
   const filtered = products.filter(p => {
-    if (selectedCategory && p.category !== selectedCategory) return false;
+    if (selectedCategory === UNCATEGORIZED && p.category) return false;
+    if (selectedCategory && selectedCategory !== UNCATEGORIZED && p.category !== selectedCategory) return false;
     if (!term) return true;
     return p.name.toLowerCase().includes(term) || (p.name_en || '').toLowerCase().includes(term);
   });
@@ -100,7 +119,7 @@ function renderTable() {
         <div class="row-name">${escapeHtml(p.name)}</div>
         ${p.name_en ? `<div class="row-name-en">${escapeHtml(p.name_en)}</div>` : ''}
       </td>
-      <td>${escapeHtml(p.category || '-')}</td>
+      <td>${escapeHtml(p.category || 'ไม่มีหมวดหมู่')}</td>
       <td class="text-right">฿${formatCurrency(p.price)}</td>
       <td class="text-right">
         ${p.stock === null ? '<span class="stock-unspecified">ไม่ระบุ</span>' : p.stock}
@@ -149,6 +168,45 @@ const imagePreview = document.getElementById('imagePreview');
 const imagePlaceholder = document.getElementById('imagePlaceholder');
 const editAuditFields = document.getElementById('editAuditFields');
 const productHistory = document.getElementById('productHistory');
+
+// Suggests category names already used elsewhere in the catalog as the
+// "หมวดหมู่" field is focused/typed into — mainly for phones, where retyping
+// an exact existing name is fiddly and iOS Safari doesn't reliably show the
+// native <datalist> suggestion UI.
+const categorySuggestionsEl = document.getElementById('categorySuggestions');
+
+function renderCategorySuggestions() {
+  const term = fields.category.value.trim().toLowerCase();
+  const matches = getKnownCategories().filter(c => c.toLowerCase().includes(term));
+  if (matches.length === 0) {
+    categorySuggestionsEl.classList.add('hidden');
+    categorySuggestionsEl.innerHTML = '';
+    return;
+  }
+  categorySuggestionsEl.innerHTML = '';
+  const fragment = document.createDocumentFragment();
+  matches.forEach((cat) => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'category-suggestion';
+    btn.textContent = cat;
+    btn.addEventListener('click', () => {
+      fields.category.value = cat;
+      categorySuggestionsEl.classList.add('hidden');
+    });
+    fragment.appendChild(btn);
+  });
+  categorySuggestionsEl.appendChild(fragment);
+  categorySuggestionsEl.classList.remove('hidden');
+}
+
+fields.category.addEventListener('focus', renderCategorySuggestions);
+fields.category.addEventListener('input', renderCategorySuggestions);
+
+document.addEventListener('click', (e) => {
+  if (e.target === fields.category || categorySuggestionsEl.contains(e.target)) return;
+  categorySuggestionsEl.classList.add('hidden');
+});
 
 function formatTime(datetimeStr) {
   return datetimeStr.slice(11, 16) + ' น. · ' + datetimeStr.slice(0, 10);
