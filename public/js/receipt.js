@@ -93,7 +93,7 @@ document.getElementById('backBtn').addEventListener('click', () => {
   window.location.href = from === 'orders' ? 'orders.html' : 'index.html';
 });
 
-// วาดใบเสร็จลงบน canvas ขาว-ดำ เพื่อส่งเป็นภาพให้เครื่องพิมพ์ Bluetooth (ดู btprint.js)
+// วาดใบเสร็จลงบน canvas ขาว-ดำ เพื่อส่งเป็นภาพให้แอป RawBT พิมพ์ (ดู printViaRawBT ด้านล่าง)
 // ใช้วิธีวาดภาพแทนส่งตัวอักษรตรงๆ เพราะเครื่องพิมพ์ ESC/POS ราคาประหยัดส่วนใหญ่ไม่รองรับ
 // ชุดรหัสภาษาไทย การส่งเป็นภาพจึงพิมพ์ภาษาไทยได้แน่นอนไม่ว่าเครื่องพิมพ์รุ่นไหน
 async function renderReceiptToCanvas(sale, settings, widthPx) {
@@ -226,17 +226,34 @@ printerWidthSelect.addEventListener('change', () => {
   localStorage.setItem('pos-printer-width', printerWidthSelect.value);
 });
 
+const RAWBT_PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=ru.a402d.rawbtprinter';
+
+// ส่งใบเสร็จ (เป็นภาพ) ให้แอป RawBT พิมพ์แทนเรา — ใช้ตัวนี้เพราะเว็บเบราว์เซอร์เข้าถึง
+// Bluetooth Classic (ที่เครื่องพิมพ์ใบเสร็จส่วนใหญ่ใช้ เช่น VOZY) ไม่ได้โดยตรง ต้องพึ่งแอป
+// ตัวกลางที่ติดตั้งไว้ในเครื่อง (ดูเหตุผลเต็มๆ ในคอมมิตที่เพิ่มฟีเจอร์นี้)
+function printViaRawBT(canvas) {
+  const dataUrl = canvas.toDataURL('image/png');
+  let appOpened = false;
+  const onBlur = () => { appOpened = true; };
+  window.addEventListener('blur', onBlur, { once: true });
+  window.location.href = 'rawbt:' + dataUrl;
+  setTimeout(() => {
+    window.removeEventListener('blur', onBlur);
+    if (!appOpened) {
+      showToast('ไม่พบแอป RawBT ในเครื่อง — กำลังเปิดหน้าติดตั้ง');
+      window.open(RAWBT_PLAY_STORE_URL, '_blank');
+    }
+  }, 1200);
+}
+
 printBluetoothBtn.addEventListener('click', async () => {
   if (!currentSale) return;
   printBluetoothBtn.disabled = true;
-  printBluetoothLabel.textContent = 'กำลังเชื่อมต่อ...';
+  printBluetoothLabel.textContent = 'กำลังพิมพ์...';
   try {
-    await btPrinter.ensureConnected();
-    printBluetoothLabel.textContent = 'กำลังพิมพ์...';
     const widthPx = Number(printerWidthSelect.value);
     const canvas = await renderReceiptToCanvas(currentSale, currentSettings, widthPx);
-    await btPrinter.printCanvas(canvas);
-    showToast('พิมพ์สำเร็จ');
+    printViaRawBT(canvas);
   } catch (err) {
     showToast(err.message);
   } finally {
