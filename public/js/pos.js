@@ -98,6 +98,8 @@ async function loadProducts() {
 async function init() {
   await setupOwnerSelect();
   await loadProducts();
+  // โฟกัสช่องค้นหาไว้ล่วงหน้า เผื่อพนักงานยิงบาร์โค้ดทันทีโดยยังไม่ได้แตะหน้าจอ
+  searchInput.focus();
 }
 
 function renderProducts() {
@@ -211,6 +213,26 @@ clearCartBtn.addEventListener('click', () => {
 });
 
 searchInput.addEventListener('input', renderProducts);
+
+// เครื่องยิงบาร์โค้ด Bluetooth ส่วนใหญ่ทำงานแบบ "คีย์บอร์ดปลอม" (HID) — ยิงแล้วจะพิมพ์
+// เลขบาร์โค้ดใส่ช่องที่ focus อยู่แล้วกด Enter ให้เอง จึงดักจับได้จากช่องค้นหานี้เลย
+// โดยไม่ต้องเชื่อมต่อ Bluetooth เพิ่มเติมใดๆ — ต่างจากเครื่องพิมพ์ใบเสร็จที่ทำแบบนี้ไม่ได้
+searchInput.addEventListener('keydown', (e) => {
+  if (e.key !== 'Enter') return;
+  e.preventDefault();
+  const code = searchInput.value.trim();
+  if (!code) return;
+
+  const product = products.find(p => p.barcode === code);
+  if (!product) {
+    showToast(`ไม่พบสินค้าบาร์โค้ด ${code}`);
+    return;
+  }
+  addToCart(product.id);
+  showToast(`เพิ่ม ${product.name} แล้ว`);
+  searchInput.value = '';
+  renderProducts();
+});
 
 document.getElementById('scanCartBtn').addEventListener('click', () => {
   Scanner.open({
