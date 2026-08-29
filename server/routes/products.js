@@ -2,6 +2,7 @@
 
 const express = require('express');
 const multer = require('multer');
+const sharp = require('sharp');
 const db = require('../db');
 const asyncHandler = require('../lib/asyncHandler');
 const { toSatang, toBaht } = require('../lib/money');
@@ -10,6 +11,14 @@ const { logAudit, getAuditLog } = require('../lib/audit');
 const router = express.Router();
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
+
+// Product photos only ever render as small grid-card thumbnails, but phone
+// cameras routinely produce multi-MB originals — serving those uncompressed
+// is what was burning through the host's monthly bandwidth quota. Every
+// upload is normalized down to one predictable, small JPEG regardless of
+// what came in, instead of trusting whatever size the client happened to send.
+const PRODUCT_IMAGE_MAX_DIMENSION = 800;
+const PRODUCT_IMAGE_JPEG_QUALITY = 80;
 
 // Images are stored as rows in the product_images table (see server/db.js),
 // not as files on disk — memoryStorage just buffers the upload in RAM long
@@ -242,9 +251,15 @@ router.post('/:id/image', asyncHandler(async (req, res) => {
       if (err) return res.status(400).json({ error: err.message });
       if (!req.file) return res.status(400).json({ error: 'No image file provided' });
 
+      const resized = await sharp(req.file.buffer)
+        .rotate() // apply EXIF orientation before it gets stripped, so sideways photos stay upright
+        .resize(PRODUCT_IMAGE_MAX_DIMENSION, PRODUCT_IMAGE_MAX_DIMENSION, { fit: 'inside', withoutEnlargement: true })
+        .jpeg({ quality: PRODUCT_IMAGE_JPEG_QUALITY })
+        .toBuffer();
+
       const { rows: [imageRow] } = await db.query(
         'INSERT INTO product_images (filename, content_type, data) VALUES ($1, $2, $3) RETURNING id',
-        [req.file.originalname, req.file.mimetype, req.file.buffer]
+        [req.file.originalname, 'image/jpeg', resized]
       );
       const imagePath = `/uploads/${imageRow.id}`;
       await db.query('UPDATE products SET image = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [imagePath, req.params.id]);
