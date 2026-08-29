@@ -226,11 +226,25 @@ async function migrateStockNullable() {
   await pool.query('ALTER TABLE products ALTER COLUMN stock DROP NOT NULL');
 }
 
+// These foreign-key-ish columns are looked up constantly (every sales-list
+// load counts sale_items per sale; every products page filters by owner;
+// every product/sale history panel filters audit_log by entity) but never
+// had an index — Postgres doesn't create one for you just because a column
+// references another table. Without it, each lookup does a full table scan
+// that gets slower as the table grows, which is exactly why this got
+// noticeably worse over time instead of being slow from day one.
+async function ensureIndexes() {
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_sale_items_sale_id ON sale_items(sale_id)');
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_products_owner_id ON products(owner_id)');
+  await pool.query('CREATE INDEX IF NOT EXISTS idx_audit_log_entity ON audit_log(entity_type, entity_id)');
+}
+
 async function initSchema() {
   await migrateSettingsToPerAccount();
   await pool.query(SCHEMA);
   await migrateOwnerDeleteBehavior();
   await migrateStockNullable();
+  await ensureIndexes();
 }
 
 module.exports = { pool, query, initSchema };
