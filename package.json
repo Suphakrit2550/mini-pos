@@ -8,7 +8,8 @@
     "start": "NODE_ENV=production node --env-file-if-exists=.env server/index.js",
     "dev": "node --env-file=.env --watch server/index.js",
     "reset-password": "node --env-file=.env scripts/reset-password.js",
-    "backup": "node --env-file=.env scripts/backup.js"
+    "backup": "node --env-file=.env scripts/backup.js",
+    "compress-images": "node --env-file=.env scripts/compress-product-images.js"
   },
   "dependencies": {
     "express": "^4.19.2",
