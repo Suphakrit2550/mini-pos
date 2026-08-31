@@ -83,7 +83,9 @@
 .product-grid {
   flex: 1;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  /* คงที่ 2 คอลัมน์เสมอบนแท็บเล็ต (แทน auto-fill ที่คำนวณจำนวนคอลัมน์จากความกว้างจริง
+     ของอุปกรณ์ — ทำให้บางรุ่นที่หน้าจอ/พื้นที่กริดแคบกว่า iPad เหลือแค่คอลัมน์เดียว) */
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   align-content: start;
   padding-bottom: 16px;
