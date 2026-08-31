@@ -277,16 +277,16 @@ function buildReceiptEscPosText(sale, settings) {
 
   for (const item of sale.items) {
     line(item.name);
-    line(`  ${formatCurrency(item.price)} x ${item.quantity} = ฿${formatCurrency(item.subtotal)}`);
+    line(`  ${formatCurrency(item.price)} x ${item.quantity} = ${formatCurrency(item.subtotal)}`);
   }
 
   divider();
-  line(`ยอดรวม ฿${formatCurrency(sale.total)}`);
+  line(`ยอดรวม ${formatCurrency(sale.total)}`);
   divider();
 
   line(`ชำระโดย ${PAYMENT_LABELS[sale.payment_method] || sale.payment_method}`);
-  if (sale.received_amount != null) line(`รับเงิน ฿${formatCurrency(sale.received_amount)}`);
-  if (sale.change_amount != null) line(`เงินทอน ฿${formatCurrency(sale.change_amount)}`);
+  if (sale.received_amount != null) line(`รับเงิน ${formatCurrency(sale.received_amount)}`);
+  if (sale.change_amount != null) line(`เงินทอน ${formatCurrency(sale.change_amount)}`);
 
   if (sale.status === 'cancelled' || sale.status === 'refunded') {
     line();
