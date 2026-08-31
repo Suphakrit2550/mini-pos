@@ -215,8 +215,16 @@ clearCartBtn.addEventListener('click', () => {
 searchInput.addEventListener('input', renderProducts);
 
 // เครื่องยิงบาร์โค้ด Bluetooth ส่วนใหญ่ทำงานแบบ "คีย์บอร์ดปลอม" (HID) — ยิงแล้วจะพิมพ์
-// เลขบาร์โค้ดใส่ช่องที่ focus อยู่แล้วกด Enter ให้เอง จึงดักจับได้จากช่องค้นหานี้เลย
-// โดยไม่ต้องเชื่อมต่อ Bluetooth เพิ่มเติมใดๆ — ต่างจากเครื่องพิมพ์ใบเสร็จที่ทำแบบนี้ไม่ได้
+// เลขบาร์โค้ดใส่ช่องที่ focus อยู่แล้วกด Enter ให้เอง ต้องมีช่องนี้ focus ค้างไว้เสมอถึงจะรับ
+// ตัวอักษรที่พิมพ์เข้ามาได้ ไม่งั้นเหมือนยิงไปแล้วไม่มีอะไรรับ (คีย์บอร์ดพิมพ์ไปแต่ไม่มีช่องไหน
+// สนใจ) — ทุกครั้งที่ช่องนี้เสียโฟกัสไป (เช่น กดการ์ดสินค้า, สแกนกล้อง) จะดึงโฟกัสกลับมาเองเสมอ
+// ยกเว้นตอนเปิดหน้าต่างชำระเงินอยู่ ซึ่งพนักงานอาจต้องพิมพ์ชื่อลูกค้าในช่องอื่นแทน
+searchInput.addEventListener('blur', () => {
+  if (checkoutModal.classList.contains('hidden')) {
+    setTimeout(() => searchInput.focus(), 50);
+  }
+});
+
 searchInput.addEventListener('keydown', (e) => {
   if (e.key !== 'Enter') return;
   e.preventDefault();
@@ -267,6 +275,7 @@ checkoutBtn.addEventListener('click', () => {
 
 document.getElementById('cancelCheckout').addEventListener('click', () => {
   checkoutModal.classList.add('hidden');
+  searchInput.focus();
 });
 
 document.querySelectorAll('.quick-cash-btn').forEach(btn => {
@@ -320,6 +329,7 @@ confirmCheckoutBtn.addEventListener('click', async () => {
     };
     const sale = await api.createSale(payload);
     checkoutModal.classList.add('hidden');
+    searchInput.focus();
     showReceipt(sale);
     cart = [];
     renderCart();
