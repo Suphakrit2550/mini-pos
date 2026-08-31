@@ -226,24 +226,16 @@ printerWidthSelect.addEventListener('change', () => {
   localStorage.setItem('pos-printer-width', printerWidthSelect.value);
 });
 
-const RAWBT_PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=ru.a402d.rawbtprinter';
-
 // ส่งใบเสร็จ (เป็นภาพ) ให้แอป RawBT พิมพ์แทนเรา — ใช้ตัวนี้เพราะเว็บเบราว์เซอร์เข้าถึง
 // Bluetooth Classic (ที่เครื่องพิมพ์ใบเสร็จส่วนใหญ่ใช้ เช่น VOZY) ไม่ได้โดยตรง ต้องพึ่งแอป
 // ตัวกลางที่ติดตั้งไว้ในเครื่อง (ดูเหตุผลเต็มๆ ในคอมมิตที่เพิ่มฟีเจอร์นี้)
+//
+// เดิมมีโค้ดเดา "แอปเปิดสำเร็จไหม" จากอีเวนต์ window blur ภายในเวลาที่กำหนด แล้วเด้งไปหน้า
+// ติดตั้งถ้าเดาว่าไม่สำเร็จ — พบว่าเดาผิดจริงในการใช้งานจริง (แอปเปิดและพิมพ์ได้ปกติ แต่ระบบ
+// กลับแจ้งว่า "ไม่พบแอป") จึงตัดการเดานี้ออก เหลือแค่เปิดลิงก์ตรงๆ ให้ระบบปฏิบัติการ Android
+// จัดการเอง ซึ่งน่าเชื่อถือกว่า
 function printViaRawBT(canvas) {
-  const dataUrl = canvas.toDataURL('image/png');
-  let appOpened = false;
-  const onBlur = () => { appOpened = true; };
-  window.addEventListener('blur', onBlur, { once: true });
-  window.location.href = 'rawbt:' + dataUrl;
-  setTimeout(() => {
-    window.removeEventListener('blur', onBlur);
-    if (!appOpened) {
-      showToast('ไม่พบแอป RawBT ในเครื่อง — กำลังเปิดหน้าติดตั้ง');
-      window.open(RAWBT_PLAY_STORE_URL, '_blank');
-    }
-  }, 1200);
+  window.location.href = 'rawbt:' + canvas.toDataURL('image/png');
 }
 
 printBluetoothBtn.addEventListener('click', async () => {
