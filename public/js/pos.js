@@ -98,8 +98,6 @@ async function loadProducts() {
 async function init() {
   await setupOwnerSelect();
   await loadProducts();
-  // โฟกัสช่องค้นหาไว้ล่วงหน้า เผื่อพนักงานยิงบาร์โค้ดทันทีโดยยังไม่ได้แตะหน้าจอ
-  searchInput.focus();
 }
 
 function renderProducts() {
@@ -214,14 +212,38 @@ clearCartBtn.addEventListener('click', () => {
 
 searchInput.addEventListener('input', renderProducts);
 
-// เครื่องยิงบาร์โค้ด Bluetooth ส่วนใหญ่ทำงานแบบ "คีย์บอร์ดปลอม" (HID) — ยิงแล้วจะพิมพ์
-// เลขบาร์โค้ดใส่ช่องที่ focus อยู่แล้วกด Enter ให้เอง ต้องมีช่องนี้ focus ค้างไว้เสมอถึงจะรับ
-// ตัวอักษรที่พิมพ์เข้ามาได้ ไม่งั้นเหมือนยิงไปแล้วไม่มีอะไรรับ (คีย์บอร์ดพิมพ์ไปแต่ไม่มีช่องไหน
-// สนใจ) — ทุกครั้งที่ช่องนี้เสียโฟกัสไป (เช่น กดการ์ดสินค้า, สแกนกล้อง) จะดึงโฟกัสกลับมาเองเสมอ
-// ยกเว้นตอนเปิดหน้าต่างชำระเงินอยู่ ซึ่งพนักงานอาจต้องพิมพ์ชื่อลูกค้าในช่องอื่นแทน
-searchInput.addEventListener('blur', () => {
-  if (checkoutModal.classList.contains('hidden')) {
-    setTimeout(() => searchInput.focus(), 50);
+// หาสินค้าจากบาร์โค้ดแล้วเพิ่มลงตะกร้า — ใช้ร่วมกันทั้งการยิงด้วยเครื่องสแกน Bluetooth,
+// สแกนด้วยกล้อง, และพิมพ์บาร์โค้ดในช่องค้นหาเอง
+function handleBarcodeScan(code) {
+  const product = products.find(p => p.barcode === code);
+  if (!product) {
+    showToast(`ไม่พบสินค้าบาร์โค้ด ${code}`);
+    return;
+  }
+  addToCart(product.id);
+  showToast(`เพิ่ม ${product.name} แล้ว`);
+}
+
+// เครื่องยิงบาร์โค้ด Bluetooth ส่วนใหญ่ทำงานแบบ "คีย์บอร์ดปลอม" (HID) — ยิงแล้วจะพิมพ์เลข
+// บาร์โค้ดเป็นคีย์บอร์ดจริงแล้วกด Enter ให้เอง ดักจับได้จากทุกที่บนหน้าจอโดยไม่ต้องมีช่อง
+// ไหน focus อยู่เลย (ไม่งั้นคีย์บอร์ดบนจอจะเด้งขึ้นมาบังหน้าจอทุกครั้งที่ต้องการสแกน) — เว้น
+// แต่ตอนกำลังพิมพ์ในช่องข้อความจริงๆ อยู่ (เช่น ค้นหาสินค้าด้วยมือ, ชื่อลูกค้า) ปล่อยให้พิมพ์ปกติ
+let scanBuffer = '';
+let lastScanKeyTime = 0;
+document.addEventListener('keydown', (e) => {
+  const tag = document.activeElement.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+  if (!checkoutModal.classList.contains('hidden')) return; // อยู่ระหว่างชำระเงิน ไม่ควรเพิ่มของแทรก
+
+  const now = Date.now();
+  if (now - lastScanKeyTime > 100) scanBuffer = ''; // ห่างกันเกิน 100ms แปลว่าเริ่มยิงใหม่
+  lastScanKeyTime = now;
+
+  if (e.key === 'Enter') {
+    if (scanBuffer) handleBarcodeScan(scanBuffer);
+    scanBuffer = '';
+  } else if (e.key.length === 1) {
+    scanBuffer += e.key;
   }
 });
 
@@ -230,14 +252,7 @@ searchInput.addEventListener('keydown', (e) => {
   e.preventDefault();
   const code = searchInput.value.trim();
   if (!code) return;
-
-  const product = products.find(p => p.barcode === code);
-  if (!product) {
-    showToast(`ไม่พบสินค้าบาร์โค้ด ${code}`);
-    return;
-  }
-  addToCart(product.id);
-  showToast(`เพิ่ม ${product.name} แล้ว`);
+  handleBarcodeScan(code);
   searchInput.value = '';
   renderProducts();
 });
@@ -245,15 +260,7 @@ searchInput.addEventListener('keydown', (e) => {
 document.getElementById('scanCartBtn').addEventListener('click', () => {
   Scanner.open({
     continuous: true,
-    onScan: (code) => {
-      const product = products.find(p => p.barcode === code);
-      if (!product) {
-        showToast(`ไม่พบสินค้าบาร์โค้ด ${code}`);
-        return;
-      }
-      addToCart(product.id);
-      showToast(`เพิ่ม ${product.name} แล้ว`);
-    },
+    onScan: handleBarcodeScan,
   });
 });
 
@@ -275,7 +282,6 @@ checkoutBtn.addEventListener('click', () => {
 
 document.getElementById('cancelCheckout').addEventListener('click', () => {
   checkoutModal.classList.add('hidden');
-  searchInput.focus();
 });
 
 document.querySelectorAll('.quick-cash-btn').forEach(btn => {
@@ -329,7 +335,6 @@ confirmCheckoutBtn.addEventListener('click', async () => {
     };
     const sale = await api.createSale(payload);
     checkoutModal.classList.add('hidden');
-    searchInput.focus();
     showReceipt(sale);
     cart = [];
     renderCart();
