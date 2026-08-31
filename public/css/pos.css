@@ -83,12 +83,19 @@
 .product-grid {
   flex: 1;
   display: grid;
-  /* คงที่ 2 คอลัมน์เสมอบนแท็บเล็ต (แทน auto-fill ที่คำนวณจำนวนคอลัมน์จากความกว้างจริง
-     ของอุปกรณ์ — ทำให้บางรุ่นที่หน้าจอ/พื้นที่กริดแคบกว่า iPad เหลือแค่คอลัมน์เดียว) */
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
   gap: 12px;
   align-content: start;
   padding-bottom: 16px;
+}
+
+/* คงที่ 2 คอลัมน์เฉพาะช่วงความกว้างระดับแท็บเล็ต (แทน auto-fill ที่คำนวณจำนวนคอลัมน์จาก
+   ความกว้างจริงของอุปกรณ์ — ทำให้บางรุ่นที่หน้าจอ/พื้นที่กริดแคบกว่า iPad เหลือแค่คอลัมน์เดียว)
+   จอกว้างระดับคอมพิวเตอร์/Mac ยังใช้ auto-fill ตามปกติเพื่อแสดงได้หลายคอลัมน์เหมือนเดิม */
+@media (min-width: 641px) and (max-width: 1300px) {
+  .product-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 .product-card {
