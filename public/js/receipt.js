@@ -253,7 +253,6 @@ function buildReceiptEscPosText(sale, settings) {
   const text = (str) => encodeThaiText(str, bytes);
   const line = (str = '') => { text(str); raw(0x0a); };
   const align = (n) => raw(0x1b, 0x61, n); // ESC a n — 0 ซ้าย, 1 กลาง, 2 ขวา
-  const bold = (on) => raw(0x1b, 0x45, on ? 1 : 0); // ESC E n
   const divider = () => line('--------------------------------');
 
   raw(0x1b, 0x40); // ESC @ — initialize
@@ -263,15 +262,11 @@ function buildReceiptEscPosText(sale, settings) {
   raw(0x1b, 0x74, 255);
 
   align(1);
-  bold(true);
   line(settings.shop_name || 'Mini POS');
-  bold(false);
   if (settings.address) line(settings.address);
   if (settings.phone) line(`โทร. ${settings.phone}`);
   line();
-  bold(true);
   line('ใบเสร็จรับเงิน / RECEIPT');
-  bold(false);
   line();
 
   align(0);
@@ -286,9 +281,7 @@ function buildReceiptEscPosText(sale, settings) {
   }
 
   divider();
-  bold(true);
   line(`ยอดรวม ฿${formatCurrency(sale.total)}`);
-  bold(false);
   divider();
 
   line(`ชำระโดย ${PAYMENT_LABELS[sale.payment_method] || sale.payment_method}`);
