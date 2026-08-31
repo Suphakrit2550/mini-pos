@@ -226,16 +226,98 @@ printerWidthSelect.addEventListener('change', () => {
   localStorage.setItem('pos-printer-width', printerWidthSelect.value);
 });
 
-// ส่งใบเสร็จ (เป็นภาพ) ให้แอป RawBT พิมพ์แทนเรา — ใช้ตัวนี้เพราะเว็บเบราว์เซอร์เข้าถึง
-// Bluetooth Classic (ที่เครื่องพิมพ์ใบเสร็จส่วนใหญ่ใช้ เช่น VOZY) ไม่ได้โดยตรง ต้องพึ่งแอป
-// ตัวกลางที่ติดตั้งไว้ในเครื่อง (ดูเหตุผลเต็มๆ ในคอมมิตที่เพิ่มฟีเจอร์นี้)
-//
-// เดิมมีโค้ดเดา "แอปเปิดสำเร็จไหม" จากอีเวนต์ window blur ภายในเวลาที่กำหนด แล้วเด้งไปหน้า
-// ติดตั้งถ้าเดาว่าไม่สำเร็จ — พบว่าเดาผิดจริงในการใช้งานจริง (แอปเปิดและพิมพ์ได้ปกติ แต่ระบบ
-// กลับแจ้งว่า "ไม่พบแอป") จึงตัดการเดานี้ออก เหลือแค่เปิดลิงก์ตรงๆ ให้ระบบปฏิบัติการ Android
-// จัดการเอง ซึ่งน่าเชื่อถือกว่า
-function printViaRawBT(canvas) {
-  window.location.href = 'rawbt:' + canvas.toDataURL('image/png');
+// แปลงอักษรไทย (unicode) เป็นไบต์ TIS-620 — โค้ดเพจที่เครื่องพิมพ์ ESC/POS ตลาดไทยส่วนใหญ่ใช้
+// เป็นการ map ตรงไปตรงมาเพราะ TIS-620 ถูกออกแบบให้ตรงกับช่วงอักษรไทยใน unicode อยู่แล้ว:
+// ก(0E01)-ฺ(0E3A) -> 0xA1-0xDA, ฿(0E3F) -> 0xDF, เ(0E40)-๛(0E5B) -> 0xE0-0xFB
+// อักขระนอกช่วงนี้ (ที่ไม่ใช่ ASCII) ไม่มีทางแทนได้ในโค้ดเพจเดียวนี้ จึงแทนด้วย "?" แทน
+function thaiCharToByte(codePoint) {
+  if (codePoint < 0x80) return codePoint;
+  if (codePoint >= 0x0e01 && codePoint <= 0x0e3a) return codePoint - 0x0e01 + 0xa1;
+  if (codePoint === 0x0e3f) return 0xdf;
+  if (codePoint >= 0x0e40 && codePoint <= 0x0e5b) return codePoint - 0x0e40 + 0xe0;
+  return 0x3f; // '?'
+}
+
+function encodeThaiText(str, bytes) {
+  for (const ch of str) bytes.push(thaiCharToByte(ch.codePointAt(0)));
+}
+
+// สร้างคำสั่ง ESC/POS แบบข้อความล้วน (ไม่ใช่ภาพ) — ต่างจาก renderReceiptToCanvas ที่ส่งเป็น
+// ภาพ bitmap ตัวนี้ส่งเป็นตัวอักษรจริงเข้ารหัส TIS-620 ให้เครื่องพิมพ์แปลผลเอง เลี่ยงข้อจำกัดของ
+// RawBT เวอร์ชันฟรีที่ล็อกการพิมพ์ภาพไว้ (ขึ้น "Buy license for full access" ทุกคำสั่งพิมพ์ภาพ)
+// ข้อแลก: ต้องพึ่งเฟิร์มแวร์เครื่องพิมพ์รองรับโค้ดเพจ TIS-620 เอง ถ้าพิมพ์ออกมาเป็นตัวอักษรมั่ว
+// แปลว่าเครื่องพิมพ์รุ่นนี้ไม่รองรับภาษาไทยในโหมดข้อความ ต้องกลับไปใช้โหมดภาพ (ซื้อ license) แทน
+function buildReceiptEscPosText(sale, settings) {
+  const bytes = [];
+  const raw = (...b) => bytes.push(...b);
+  const text = (str) => encodeThaiText(str, bytes);
+  const line = (str = '') => { text(str); raw(0x0a); };
+  const align = (n) => raw(0x1b, 0x61, n); // ESC a n — 0 ซ้าย, 1 กลาง, 2 ขวา
+  const bold = (on) => raw(0x1b, 0x45, on ? 1 : 0); // ESC E n
+  const divider = () => line('--------------------------------');
+
+  raw(0x1b, 0x40); // ESC @ — initialize
+
+  align(1);
+  bold(true);
+  line(settings.shop_name || 'Mini POS');
+  bold(false);
+  if (settings.address) line(settings.address);
+  if (settings.phone) line(`โทร. ${settings.phone}`);
+  line();
+  bold(true);
+  line('ใบเสร็จรับเงิน / RECEIPT');
+  bold(false);
+  line();
+
+  align(0);
+  line(`เลขที่บิล #${sale.id}`);
+  line(`วันที่ ${formatDateTime(sale.created_at)}`);
+  if (sale.customer_name) line(`ลูกค้า ${sale.customer_name}`);
+  divider();
+
+  for (const item of sale.items) {
+    line(item.name);
+    line(`  ${formatCurrency(item.price)} x ${item.quantity} = ฿${formatCurrency(item.subtotal)}`);
+  }
+
+  divider();
+  bold(true);
+  line(`ยอดรวม ฿${formatCurrency(sale.total)}`);
+  bold(false);
+  divider();
+
+  line(`ชำระโดย ${PAYMENT_LABELS[sale.payment_method] || sale.payment_method}`);
+  if (sale.received_amount != null) line(`รับเงิน ฿${formatCurrency(sale.received_amount)}`);
+  if (sale.change_amount != null) line(`เงินทอน ฿${formatCurrency(sale.change_amount)}`);
+
+  if (sale.status === 'cancelled' || sale.status === 'refunded') {
+    line();
+    align(1);
+    line(sale.status === 'cancelled' ? '** ใบเสร็จนี้ถูกยกเลิก **' : '** ใบเสร็จนี้คืนเงินแล้ว **');
+    line(`โดย ${sale.voided_by || '-'}`);
+    line(`เหตุผล: ${sale.voided_reason || '-'}`);
+  }
+
+  if (settings.receipt_footer) {
+    line();
+    align(1);
+    line(settings.receipt_footer);
+  }
+
+  raw(0x0a, 0x0a, 0x0a, 0x0a);
+  return new Uint8Array(bytes);
+}
+
+// ส่งใบเสร็จให้แอป RawBT พิมพ์แทนเรา — ใช้ตัวนี้เพราะเว็บเบราว์เซอร์เข้าถึง Bluetooth Classic
+// (ที่เครื่องพิมพ์ใบเสร็จส่วนใหญ่ใช้ เช่น VOZY) ไม่ได้โดยตรง ต้องพึ่งแอปตัวกลางที่ติดตั้งไว้ในเครื่อง
+// รูปแบบ intent:base64,...#Intent;scheme=rawbt;... นี้คือช่องทางส่ง "ข้อมูลดิบ" ของ RawBT
+// (ต่างจาก rawbt:data:image/... ที่ใช้ส่งภาพ ซึ่งเวอร์ชันฟรีล็อกไว้)
+function printViaRawBT(bytes) {
+  let binary = '';
+  for (const b of bytes) binary += String.fromCharCode(b);
+  const base64 = btoa(binary);
+  window.location.href = `intent:base64,${base64}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end;`;
 }
 
 printBluetoothBtn.addEventListener('click', async () => {
@@ -243,9 +325,8 @@ printBluetoothBtn.addEventListener('click', async () => {
   printBluetoothBtn.disabled = true;
   printBluetoothLabel.textContent = 'กำลังพิมพ์...';
   try {
-    const widthPx = Number(printerWidthSelect.value);
-    const canvas = await renderReceiptToCanvas(currentSale, currentSettings, widthPx);
-    printViaRawBT(canvas);
+    const bytes = buildReceiptEscPosText(currentSale, currentSettings);
+    printViaRawBT(bytes);
   } catch (err) {
     showToast(err.message);
   } finally {
