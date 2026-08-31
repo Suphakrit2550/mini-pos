@@ -9,7 +9,8 @@
     "dev": "node --env-file=.env --watch server/index.js",
     "reset-password": "node --env-file=.env scripts/reset-password.js",
     "backup": "node --env-file=.env scripts/backup.js",
-    "compress-images": "node --env-file=.env scripts/compress-product-images.js"
+    "compress-images": "node --env-file=.env scripts/compress-product-images.js",
+    "reset-sales-history": "node --env-file=.env scripts/reset-sales-history.js"
   },
   "dependencies": {
     "express": "^4.19.2",
