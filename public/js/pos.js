@@ -287,7 +287,14 @@ document.getElementById('cancelCheckout').addEventListener('click', () => {
 document.querySelectorAll('.quick-cash-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const amount = btn.dataset.amount;
-    receivedInput.value = amount === 'exact' ? cartTotal().toFixed(2) : amount;
+    if (amount === 'exact') {
+      receivedInput.value = cartTotal().toFixed(2);
+    } else {
+      // กดซ้ำๆ ได้ — จำลองการหยิบแบงก์/เหรียญใบเดียวกันซ้อนกันหลายใบ เช่น ลูกค้าจ่าย
+      // แบงก์ร้อย 2 ใบ ก็กดปุ่ม 100 สองครั้ง แทนที่จะต้องกดเลขในคีย์แพดเอง
+      const current = parseFloat(receivedInput.value) || 0;
+      receivedInput.value = (current + Number(amount)).toFixed(2);
+    }
     updateChange();
   });
 });
