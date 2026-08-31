@@ -309,6 +309,27 @@ function buildReceiptEscPosText(sale, settings) {
   return new Uint8Array(bytes);
 }
 
+// [ชั่วคราว — เพื่อหาเลขโค้ดเพจไทยของเครื่องพิมพ์รุ่นนี้] พิมพ์คำว่า "สวัสดี" ซ้ำด้วย ESC t n
+// (เลือกโค้ดเพจ) หลายเลขในใบเดียว จะได้เห็นพร้อมกันว่าเลขไหนออกมาเป็นภาษาไทยที่อ่านได้จริง
+// ลบฟังก์ชันนี้ทิ้งและเอา printerWidthSelect กลับไปเรียก buildReceiptEscPosText ตามปกติ
+// หลังจากรู้เลขที่ถูกต้องแล้ว
+function buildCodepageTestPrint() {
+  const bytes = [];
+  const raw = (...b) => bytes.push(...b);
+  const text = (str) => encodeThaiText(str, bytes);
+  const line = (str = '') => { text(str); raw(0x0a); };
+
+  const CANDIDATES = [0, 16, 20, 21, 22, 23, 24, 25, 26, 27, 30, 31, 32, 255];
+
+  raw(0x1b, 0x40); // ESC @ init
+  for (const n of CANDIDATES) {
+    raw(0x1b, 0x74, n); // ESC t n — select character code table
+    line(`n=${n}: สวัสดี ก-ฮ`);
+  }
+  raw(0x0a, 0x0a, 0x0a, 0x0a);
+  return new Uint8Array(bytes);
+}
+
 // ส่งใบเสร็จให้แอป RawBT พิมพ์แทนเรา — ใช้ตัวนี้เพราะเว็บเบราว์เซอร์เข้าถึง Bluetooth Classic
 // (ที่เครื่องพิมพ์ใบเสร็จส่วนใหญ่ใช้ เช่น VOZY) ไม่ได้โดยตรง ต้องพึ่งแอปตัวกลางที่ติดตั้งไว้ในเครื่อง
 // รูปแบบ intent:base64,...#Intent;scheme=rawbt;... นี้คือช่องทางส่ง "ข้อมูลดิบ" ของ RawBT
@@ -325,7 +346,7 @@ printBluetoothBtn.addEventListener('click', async () => {
   printBluetoothBtn.disabled = true;
   printBluetoothLabel.textContent = 'กำลังพิมพ์...';
   try {
-    const bytes = buildReceiptEscPosText(currentSale, currentSettings);
+    const bytes = buildCodepageTestPrint(); // ชั่วคราว — ทดสอบหาเลขโค้ดเพจไทย
     printViaRawBT(bytes);
   } catch (err) {
     showToast(err.message);
