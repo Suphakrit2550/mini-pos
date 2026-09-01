@@ -1,7 +1,11 @@
-// สร้าง PDF ป้ายบาร์โค้ด (รูปสินค้า + บาร์โค้ด Code128 + ชื่อ) สำหรับสินค้าในหมวดหมู่เดียว —
+// สร้าง PDF ป้ายบาร์โค้ด (รูปสินค้า + บาร์โค้ด EAN-13 + ชื่อ) สำหรับสินค้าในหมวดหมู่เดียว —
 // ใช้ร่วมกันทั้งจาก API route (server/routes/products.js) และสคริปต์ฝั่งเครื่อง
 // (scripts/generate-barcode-labels.js เดิมมีโค้ดชุดนี้อยู่ในตัวเอง ยังคงไว้แยกกันเพราะสคริปต์
 // รันได้อิสระโดยไม่ต้องมีเซิร์ฟเวอร์ทำงานอยู่)
+//
+// ใช้ EAN-13 (ไม่ใช่ Code128) เพราะเครื่องยิงบาร์โค้ดราคาประหยัดหลายรุ่นเปิดใช้งานเฉพาะ
+// บาร์โค้ดมาตรฐานร้านค้า (EAN/UPC) เป็นค่าเริ่มต้นจากโรงงาน ไม่เปิด Code128 ให้อัตโนมัติ —
+// ยืนยันจากการทดสอบจริงว่าเครื่องอ่าน EAN-13 ได้แต่ Code128 อ่านไม่ได้
 
 const path = require('path');
 const bwipjs = require('bwip-js');
@@ -12,22 +16,51 @@ const COLS = 3;
 const ROWS = 4;
 const FONT_PATH = path.join(__dirname, 'Prompt-Regular.ttf');
 
+// รหัสขึ้นต้น "20" อยู่ในช่วง 20-29 ที่ GS1 (หน่วยงานมาตรฐานบาร์โค้ดสากล) สงวนไว้สำหรับ
+// "ใช้ภายในร้าน/องค์กรเท่านั้น" โดยเฉพาะ ไม่ชนกับบาร์โค้ดสินค้าจริงจากผู้ผลิตทั่วโลกแน่นอน
+const EAN13_PREFIX = '20';
+
+// บาร์โค้ดที่เคยสร้างด้วยระบบเก่า (รูปแบบ P<id> ตอนยังใช้ Code128) — ใช้เช็คว่าค่านี้เป็นโค้ด
+// ที่ระบบสร้างเองมาก่อน (แก้เป็น EAN-13 ใหม่ได้เลย) ไม่ใช่บาร์โค้ดจริงจากผู้ผลิตที่ห้ามแตะ
+const OLD_AUTO_BARCODE_PATTERN = /^P\d+$/;
+
 function imageIdFromPath(imagePath) {
   if (!imagePath) return null;
   const match = /\/uploads\/(\d+)$/.exec(imagePath);
   return match ? Number(match[1]) : null;
 }
 
-// เติมบาร์โค้ดให้สินค้าที่ยังไม่มี (รูปแบบ P<id> ไม่ซ้ำแน่นอนเพราะอิง id ของระบบเอง) แล้ว
-// บันทึกกลับเข้าฐานข้อมูลทันที — เรียกก่อนสร้าง PDF เสมอ เพื่อให้ทุกสินค้าที่จะพิมพ์ป้ายมี
-// บาร์โค้ดครบ
+function generateEan13Digits(productId) {
+  // 12 หลัก (ไม่รวมหลักตรวจสอบ) — bwip-js คำนวณหลักที่ 13 ให้เองตอนสร้างภาพ
+  return `${EAN13_PREFIX}${String(productId).padStart(10, '0')}`;
+}
+
+// เติมบาร์โค้ดให้สินค้าที่ยังไม่มี หรือมีแต่เป็นโค้ดที่ระบบเคยสร้างเองแบบเก่า (P<id>) แล้ว
+// บันทึกกลับเข้าฐานข้อมูลทันที — บาร์โค้ดจริงจากผู้ผลิตที่มีอยู่แล้วจะไม่ถูกแตะต้องเลย
+// เรียกก่อนสร้าง PDF เสมอ เพื่อให้ทุกสินค้าที่จะพิมพ์ป้ายมีบาร์โค้ดครบ
 async function ensureBarcodes(db, products) {
   for (const product of products) {
-    if (!product.barcode) {
-      product.barcode = `P${product.id}`;
+    if (!product.barcode || OLD_AUTO_BARCODE_PATTERN.test(product.barcode)) {
+      product.barcode = generateEan13Digits(product.id);
       await db.query('UPDATE products SET barcode = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [product.barcode, product.id]);
     }
   }
+}
+
+// สินค้าที่มีบาร์โค้ดจริงจากผู้ผลิตอยู่แล้ว (ไม่ถูกแตะโดย ensureBarcodes) อาจไม่ใช่รูปแบบ
+// ตัวเลข 12-13 หลักแบบ EAN-13 เป๊ะๆ ก็ได้ (เช่น พิมพ์เป็นรหัสสินค้าของร้านเอง) — EAN-13 บังคับ
+// รูปแบบตายตัว ถ้าค่าไม่ตรงสเปกจะสร้างภาพไม่ได้เลย จึงต้องมีทางสำรองเป็น Code128 ที่รับข้อความ
+// แบบไหนก็ได้ ให้ทุกสินค้ามีบาร์โค้ดให้พิมพ์เสมอ ไม่ว่าค่าที่บันทึกไว้จะอยู่ในรูปแบบใด
+async function renderBarcodeBuffer(value) {
+  const isValidEan13 = /^\d{12,13}$/.test(value);
+  if (isValidEan13) {
+    try {
+      return await bwipjs.toBuffer({ bcid: 'ean13', text: value, scale: 3, height: 12, includetext: true, textxalign: 'center' });
+    } catch {
+      // ตกไปใช้ Code128 ด้านล่างแทน
+    }
+  }
+  return bwipjs.toBuffer({ bcid: 'code128', text: value, scale: 3, height: 12, includetext: true, textxalign: 'center' });
 }
 
 async function buildCategoryLabelPdf(db, ownerId, category) {
@@ -53,14 +86,7 @@ async function buildCategoryLabelPdf(db, ownerId, category) {
   }
 
   for (const product of products) {
-    product.barcodeBuffer = await bwipjs.toBuffer({
-      bcid: 'code128',
-      text: product.barcode,
-      scale: 3,
-      height: 12,
-      includetext: true,
-      textxalign: 'center',
-    });
+    product.barcodeBuffer = await renderBarcodeBuffer(product.barcode);
     const imgId = imageIdFromPath(product.image);
     product.imageBuffer = imgId ? imageMap.get(imgId) || null : null;
   }
