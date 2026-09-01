@@ -1,7 +1,7 @@
 // สร้างบาร์โค้ด EAN-13 (มาตรฐานเดียวกับสินค้าตามร้านค้าทั่วไป อ่านได้กับเครื่องยิงบาร์โค้ด
 // แทบทุกรุ่นเพราะเป็นค่าเริ่มต้นจากโรงงาน ต่างจาก Code128 ที่บางเครื่องต้องตั้งค่าเพิ่มก่อนถึง
 // จะอ่านได้) ให้สินค้าทุกชิ้นของบัญชีที่ระบุ แล้วจัดวางเป็นป้ายรูปสินค้า + บาร์โค้ด ลงกระดาษ A4
-// แยกไฟล์ PDF ตามหมวดหมู่ บันทึกลงโฟลเดอร์ ~/Downloads/คิวอาร้านยายเพ็ญ
+// แยกไฟล์ PDF ตามหมวดหมู่ บันทึกลงโฟลเดอร์ ~/Downloads/QR POS
 //
 // ใช้ตรรกะเดียวกับ GET /api/products/barcode-labels (server/lib/barcodeLabels.js) — ตัวนี้
 // มีไว้สำหรับรันจากเครื่องโดยตรงโดยไม่ต้องพึ่งเว็บเซิร์ฟเวอร์ทำงานอยู่
@@ -14,7 +14,7 @@ const os = require('os');
 const { pool } = require('../server/db');
 const { buildCategoryLabelPdf } = require('../server/lib/barcodeLabels');
 
-const OUTPUT_DIR = path.join(os.homedir(), 'Downloads', 'คิวอาร้านยายเพ็ญ');
+const OUTPUT_DIR = path.join(os.homedir(), 'Downloads', 'QR POS');
 const NO_CATEGORY_LABEL = 'ไม่ระบุหมวดหมู่';
 
 function sanitizeFilename(name) {
