@@ -11,14 +11,14 @@
     "backup": "node --env-file=.env scripts/backup.js",
     "compress-images": "node --env-file=.env scripts/compress-product-images.js",
     "reset-sales-history": "node --env-file=.env scripts/reset-sales-history.js",
-    "generate-qr-labels": "node --env-file=.env scripts/generate-qr-labels.js"
+    "generate-barcode-labels": "node --env-file=.env scripts/generate-barcode-labels.js"
   },
   "dependencies": {
+    "bwip-js": "^4.11.4",
     "express": "^4.19.2",
     "multer": "^2.2.0",
     "pdfkit": "^0.20.2",
     "pg": "^8.23.0",
-    "qrcode": "^1.5.4",
     "selfsigned": "^5.5.0",
     "sharp": "^0.35.4"
   }

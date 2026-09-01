@@ -7,6 +7,7 @@ const db = require('../db');
 const asyncHandler = require('../lib/asyncHandler');
 const { toSatang, toBaht } = require('../lib/money');
 const { logAudit, getAuditLog } = require('../lib/audit');
+const { buildCategoryLabelPdf } = require('../lib/barcodeLabels');
 
 const router = express.Router();
 
@@ -87,6 +88,30 @@ router.get('/', asyncHandler(async (req, res) => {
     ? await db.query('SELECT * FROM products WHERE owner_id = $1 AND active = TRUE ORDER BY name', [ownerId])
     : await db.query('SELECT * FROM products WHERE owner_id = $1 ORDER BY name', [ownerId]);
   res.json(rows.map(serializeProduct));
+}));
+
+// รายชื่อหมวดหมู่ที่มีอยู่จริงในคลังของบัญชีนี้ — ให้หน้าพิมพ์ป้ายบาร์โค้ดรู้ว่ามีหมวดไหน
+// ให้เลือกบ้าง ก่อนขอ PDF ของหมวดนั้นจริงจาก /barcode-labels ด้านล่าง
+router.get('/categories', asyncHandler(async (req, res) => {
+  const ownerId = resolveOwnerId(req);
+  const { rows } = await db.query(
+    'SELECT DISTINCT category FROM products WHERE owner_id = $1 AND active = TRUE AND category IS NOT NULL ORDER BY category',
+    [ownerId]
+  );
+  res.json(rows.map((r) => r.category));
+}));
+
+// สร้าง PDF ป้ายบาร์โค้ด (รูปสินค้า + บาร์โค้ด + ชื่อ) ของสินค้าทั้งหมดในหมวดหมู่เดียว ให้
+// ดาวน์โหลดตรงจากเบราว์เซอร์ — ไม่ระบุ ?category= จะหมายถึงสินค้าที่ไม่มีหมวดหมู่
+router.get('/barcode-labels', asyncHandler(async (req, res) => {
+  const ownerId = resolveOwnerId(req);
+  const category = req.query.category || null;
+  const pdfBuffer = await buildCategoryLabelPdf(db, ownerId, category);
+  if (!pdfBuffer) return res.status(404).json({ error: 'ไม่พบสินค้าในหมวดหมู่นี้' });
+  const filename = `barcode-labels-${category || 'ไม่ระบุหมวดหมู่'}.pdf`;
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`);
+  res.send(pdfBuffer);
 }));
 
 router.get('/:id', asyncHandler(async (req, res) => {
