@@ -277,6 +277,10 @@ document.addEventListener('keydown', (e) => {
   lastScanKeyTime = now;
 
   if (e.key === 'Enter') {
+    // ถ้าปุ่มไหนบนหน้าจอค้าง focus อยู่ (เช่น เพิ่งกดปุ่ม "ล้าง") เบราว์เซอร์จะตีความ Enter
+    // ว่าเป็นการกดปุ่มนั้นซ้ำเองโดยอัตโนมัติ (ทำงานตามมาตรฐาน HTML) ต้อง preventDefault กัน
+    // ไม่ให้ยิงบาร์โค้ดตัวถัดไปไปกระตุ้นปุ่มเดิมซ้ำ
+    e.preventDefault();
     if (scanBuffer) handleBarcodeScan(scanBuffer);
     scanBuffer = '';
   } else if (e.key.length === 1) {
