@@ -6,7 +6,19 @@
 // - แอดมินเลือกขายแทนพนักงานคนอื่นได้ผ่าน ownerSelect (สินค้า/สต็อก/ยอดขายจะอยู่ในบัญชีของคนนั้น)
 
 let products = [];
-let cart = []; // { product_id, name, price, quantity, stock }
+// จำตะกร้าไว้ใน localStorage — เว็บนี้เป็นเว็บหลายหน้า (ไม่ใช่ SPA) ทุกครั้งที่สลับไปหน้าอื่น
+// (เช่น จัดการสินค้า) แล้วกลับมา pos.js จะโหลดใหม่หมด ถ้าไม่บันทึกไว้ ตะกร้าที่ยังไม่ได้
+// ชำระเงินจะหายทันที
+function loadCartFromStorage() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('pos-cart'));
+    return Array.isArray(saved) ? saved : [];
+  } catch {
+    return [];
+  }
+}
+
+let cart = loadCartFromStorage(); // { product_id, name, price, quantity, stock }
 let selectedCategory = null; // null = ทุกหมวดหมู่
 
 const productGrid = document.getElementById('productGrid');
@@ -93,6 +105,29 @@ async function loadProducts() {
   products = await api.getProducts(true, selectedOwnerId());
   setupCategoryTabs();
   renderProducts();
+  reconcileCartWithProducts();
+}
+
+// ตะกร้าที่จำไว้ข้ามหน้าอาจเก่ากว่าข้อมูลสินค้าจริงแล้ว (ราคา/สต็อกเปลี่ยน หรือสินค้าถูกลบไป)
+// — อัปเดตให้ตรงกับปัจจุบันทุกครั้งที่โหลดสินค้าใหม่ ก่อนแสดงตะกร้าให้เห็น
+function reconcileCartWithProducts() {
+  if (cart.length === 0) return;
+  let changed = false;
+  cart = cart
+    .map((item) => {
+      const product = products.find((p) => p.id === item.product_id);
+      if (!product) {
+        changed = true;
+        return null;
+      }
+      const stock = product.stock;
+      const quantity = stock !== null ? Math.min(item.quantity, stock) : item.quantity;
+      if (quantity !== item.quantity) changed = true;
+      return { ...item, name: product.name, price: product.price, image: product.image, stock, quantity };
+    })
+    .filter((item) => item && item.quantity > 0);
+  if (changed) showToast('ตะกร้าถูกปรับตามสต็อก/สินค้าที่มีอยู่จริง');
+  renderCart();
 }
 
 async function init() {
@@ -167,6 +202,8 @@ function cartTotal() {
 }
 
 function renderCart() {
+  localStorage.setItem('pos-cart', JSON.stringify(cart));
+
   if (cart.length === 0) {
     cartItemsEl.innerHTML = '<p class="empty-state">ยังไม่มีสินค้าในตะกร้า</p>';
     checkoutBtn.disabled = true;
@@ -255,13 +292,6 @@ searchInput.addEventListener('keydown', (e) => {
   handleBarcodeScan(code);
   searchInput.value = '';
   renderProducts();
-});
-
-document.getElementById('scanCartBtn').addEventListener('click', () => {
-  Scanner.open({
-    continuous: true,
-    onScan: handleBarcodeScan,
-  });
 });
 
 // Checkout modal

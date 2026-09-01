@@ -19,7 +19,7 @@
 }
 
 .pos-search input {
-  flex: 1;
+  flex: 0 1 260px;
   min-width: 0;
   height: var(--tap);
   border: 1px solid var(--border);
@@ -30,26 +30,14 @@
   background: var(--surface);
 }
 
-.pos-search .btn {
-  flex-shrink: 0;
-  white-space: nowrap;
-}
-
-/* Horizontally-scrollable category filter chips, built from whatever
-   category values actually appear in the current catalog (see
-   setupCategoryTabs() in pos.js) — hidden entirely when a shop has no
-   categorized products, so an empty "ทั้งหมด"-only bar never shows. */
+/* หมวดหมู่ทั้งหมดแสดงพร้อมกันเป็นกริดวางต่อบรรทัด (ไม่เลื่อนแนวนอน) — เมื่อร้านมีหมวดหมู่
+   เยอะ การเลื่อนหาทีละอันช้ากว่าการกวาดตาดูทั้งหมดพร้อมกันแล้วแตะอันที่ต้องการ ซ่อนทั้งแถบ
+   เมื่อร้านไม่มีสินค้าที่ตั้งหมวดหมู่ไว้เลย (ดู setupCategoryTabs() ใน pos.js) */
 .category-tabs {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  overflow-x: auto;
-  padding-bottom: 4px;
   margin-bottom: 14px;
-  scrollbar-width: none;
-}
-
-.category-tabs::-webkit-scrollbar {
-  display: none;
 }
 
 .category-tab {
