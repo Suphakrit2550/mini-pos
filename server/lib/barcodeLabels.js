@@ -20,9 +20,12 @@ const FONT_PATH = path.join(__dirname, 'Prompt-Regular.ttf');
 // "ใช้ภายในร้าน/องค์กรเท่านั้น" โดยเฉพาะ ไม่ชนกับบาร์โค้ดสินค้าจริงจากผู้ผลิตทั่วโลกแน่นอน
 const EAN13_PREFIX = '20';
 
-// บาร์โค้ดที่เคยสร้างด้วยระบบเก่า (รูปแบบ P<id> ตอนยังใช้ Code128) — ใช้เช็คว่าค่านี้เป็นโค้ด
-// ที่ระบบสร้างเองมาก่อน (แก้เป็น EAN-13 ใหม่ได้เลย) ไม่ใช่บาร์โค้ดจริงจากผู้ผลิตที่ห้ามแตะ
+// บาร์โค้ดที่เคยสร้างด้วยระบบเก่า — ใช้เช็คว่าค่านี้เป็นโค้ดที่ระบบสร้างเองมาก่อน (สร้างใหม่ทับ
+// ได้เลย) ไม่ใช่บาร์โค้ดจริงจากผู้ผลิตที่ห้ามแตะ: รูปแบบ P<id> (ตอนยังใช้ Code128) หรือ 12 หลัก
+// ขึ้นต้นด้วย EAN13_PREFIX แบบไม่มีหลักตรวจสอบ (บั๊กของเวอร์ชันก่อนหน้า — เก็บแค่ 12 หลักแทนที่
+// จะเป็น 13 หลักเต็ม ทำให้ค่าที่ยิงได้จากป้ายจริง (13 หลัก) ไม่ตรงกับที่บันทึกไว้เลย)
 const OLD_AUTO_BARCODE_PATTERN = /^P\d+$/;
+const INCOMPLETE_EAN13_PATTERN = new RegExp(`^${EAN13_PREFIX}\\d{10}$`);
 
 function imageIdFromPath(imagePath) {
   if (!imagePath) return null;
@@ -30,17 +33,27 @@ function imageIdFromPath(imagePath) {
   return match ? Number(match[1]) : null;
 }
 
-function generateEan13Digits(productId) {
-  // 12 หลัก (ไม่รวมหลักตรวจสอบ) — bwip-js คำนวณหลักที่ 13 ให้เองตอนสร้างภาพ
-  return `${EAN13_PREFIX}${String(productId).padStart(10, '0')}`;
+// อัลกอริทึมมาตรฐานของ EAN-13: จากซ้ายไปขวา คูณหลักที่ตำแหน่งคี่ (1-indexed) ด้วย 1 และ
+// ตำแหน่งคู่ด้วย 3 แล้วรวมกัน หลักตรวจสอบ = เลขที่บวกเข้าไปแล้วหารด้วย 10 ลงตัวพอดี
+function ean13CheckDigit(digits12) {
+  let sum = 0;
+  for (let i = 0; i < 12; i++) {
+    sum += Number(digits12[i]) * (i % 2 === 0 ? 1 : 3);
+  }
+  return (10 - (sum % 10)) % 10;
 }
 
-// เติมบาร์โค้ดให้สินค้าที่ยังไม่มี หรือมีแต่เป็นโค้ดที่ระบบเคยสร้างเองแบบเก่า (P<id>) แล้ว
+function generateEan13Digits(productId) {
+  const body = `${EAN13_PREFIX}${String(productId).padStart(10, '0')}`; // 12 หลัก
+  return body + ean13CheckDigit(body); // 13 หลักเต็ม รวมหลักตรวจสอบ — ต้องตรงกับที่เครื่องยิงอ่านได้จริง
+}
+
+// เติมบาร์โค้ดให้สินค้าที่ยังไม่มี หรือมีแต่เป็นโค้ดที่ระบบเคยสร้างเองแบบเก่า/ไม่สมบูรณ์ แล้ว
 // บันทึกกลับเข้าฐานข้อมูลทันที — บาร์โค้ดจริงจากผู้ผลิตที่มีอยู่แล้วจะไม่ถูกแตะต้องเลย
 // เรียกก่อนสร้าง PDF เสมอ เพื่อให้ทุกสินค้าที่จะพิมพ์ป้ายมีบาร์โค้ดครบ
 async function ensureBarcodes(db, products) {
   for (const product of products) {
-    if (!product.barcode || OLD_AUTO_BARCODE_PATTERN.test(product.barcode)) {
+    if (!product.barcode || OLD_AUTO_BARCODE_PATTERN.test(product.barcode) || INCOMPLETE_EAN13_PATTERN.test(product.barcode)) {
       product.barcode = generateEan13Digits(product.id);
       await db.query('UPDATE products SET barcode = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2', [product.barcode, product.id]);
     }
