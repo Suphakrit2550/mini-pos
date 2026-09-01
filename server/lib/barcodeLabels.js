@@ -13,8 +13,10 @@ const PDFDocument = require('pdfkit');
 
 const PAGE_MARGIN = 30;
 const COLS = 3;
-const ROWS = 4;
+const ROWS = 3; // ลดจาก 4 เหลือ 3 แถวต่อหน้า เพื่อให้แต่ละป้ายมีพื้นที่เหลือมากขึ้นสำหรับขยายรูป
+const HEADER_HEIGHT = 34; // พื้นที่หัวกระดาษสำหรับเขียนชื่อหมวดหมู่ ซ้ำทุกหน้า
 const FONT_PATH = path.join(__dirname, 'Prompt-Regular.ttf');
+const NO_CATEGORY_LABEL = 'ไม่ระบุหมวดหมู่';
 
 // รหัสขึ้นต้น "20" อยู่ในช่วง 20-29 ที่ GS1 (หน่วยงานมาตรฐานบาร์โค้ดสากล) สงวนไว้สำหรับ
 // "ใช้ภายในร้าน/องค์กรเท่านั้น" โดยเฉพาะ ไม่ชนกับบาร์โค้ดสินค้าจริงจากผู้ผลิตทั่วโลกแน่นอน
@@ -104,10 +106,22 @@ async function buildCategoryLabelPdf(db, ownerId, category) {
     product.imageBuffer = imgId ? imageMap.get(imgId) || null : null;
   }
 
-  return renderPdfBuffer(products);
+  return renderPdfBuffer(products, category || NO_CATEGORY_LABEL);
 }
 
-function renderPdfBuffer(products) {
+function drawPageHeader(doc, categoryLabel) {
+  const usableWidth = doc.page.width - PAGE_MARGIN * 2;
+  doc.fontSize(16).fillColor('#000000').text(categoryLabel, PAGE_MARGIN, PAGE_MARGIN - 4, {
+    width: usableWidth,
+    align: 'center',
+  });
+  doc.moveTo(PAGE_MARGIN, PAGE_MARGIN + HEADER_HEIGHT - 8)
+    .lineTo(doc.page.width - PAGE_MARGIN, PAGE_MARGIN + HEADER_HEIGHT - 8)
+    .strokeColor('#999999')
+    .stroke();
+}
+
+function renderPdfBuffer(products, categoryLabel) {
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', margin: PAGE_MARGIN });
     // ฟอนต์ในตัว PDFKit (Helvetica) ไม่รองรับภาษาไทยเลย ต้องฝังฟอนต์ที่รองรับไทยเข้าไปตรงๆ
@@ -120,25 +134,33 @@ function renderPdfBuffer(products) {
     doc.on('error', reject);
 
     const usableWidth = doc.page.width - PAGE_MARGIN * 2;
-    const usableHeight = doc.page.height - PAGE_MARGIN * 2;
+    const gridHeight = doc.page.height - PAGE_MARGIN * 2 - HEADER_HEIGHT;
     const cellW = usableWidth / COLS;
-    const cellH = usableHeight / ROWS;
+    const cellH = gridHeight / ROWS;
+    const gridTop = PAGE_MARGIN + HEADER_HEIGHT;
     const perPage = COLS * ROWS;
+
+    drawPageHeader(doc, categoryLabel);
 
     products.forEach((product, i) => {
       const posInPage = i % perPage;
-      if (i > 0 && posInPage === 0) doc.addPage();
+      if (i > 0 && posInPage === 0) {
+        doc.addPage();
+        drawPageHeader(doc, categoryLabel);
+      }
 
       const col = posInPage % COLS;
       const row = Math.floor(posInPage / COLS);
       const cellX = PAGE_MARGIN + col * cellW;
-      const cellY = PAGE_MARGIN + row * cellH;
-      const pad = 8;
+      const cellY = gridTop + row * cellH;
+      const pad = 10;
       const innerW = cellW - pad * 2;
 
       doc.rect(cellX + 2, cellY + 2, cellW - 4, cellH - 4).stroke('#cccccc');
 
-      const imgSize = Math.min(innerW * 0.5, 70);
+      // รูปสินค้าใช้พื้นที่ที่เหลือในกรอบให้เต็มที่มากขึ้น (เดิมกำหนดเพดานตายตัวไว้เล็กเกินไป
+      // เมื่อเทียบกับพื้นที่ในกรอบจริง ทำให้ดูเล็กและมีที่ว่างเหลือโดยไม่จำเป็น)
+      const imgSize = Math.min(innerW * 0.85, cellH * 0.5);
       let cursorY = cellY + pad;
       if (product.imageBuffer) {
         try {
@@ -147,17 +169,17 @@ function renderPdfBuffer(products) {
           // รูปเสีย/อ่านไม่ได้ ข้ามไป ไม่ให้ทั้งไฟล์พัง
         }
       }
-      cursorY += imgSize + 6;
+      cursorY += imgSize + 8;
 
       const barcodeW = innerW;
-      const barcodeH = Math.min(barcodeW * 0.35, 48);
+      const barcodeH = Math.min(barcodeW * 0.4, 65);
       doc.image(product.barcodeBuffer, cellX + pad, cursorY, { fit: [barcodeW, barcodeH], align: 'center' });
       cursorY += barcodeH + 6;
 
-      doc.fontSize(8).fillColor('#000000').text(product.name, cellX + pad, cursorY, {
+      doc.fontSize(9).fillColor('#000000').text(product.name, cellX + pad, cursorY, {
         width: innerW,
         align: 'center',
-        height: 24,
+        height: 26,
         ellipsis: true,
       });
     });
