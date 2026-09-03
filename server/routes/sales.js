@@ -8,6 +8,18 @@ const { logAudit, getAuditLog } = require('../lib/audit');
 
 const router = express.Router();
 
+// daily_no is the customer-facing bill number: resets to 1 each calendar day
+// (Bangkok time, see db.js) per account, independent of the sales.id primary
+// key, which stays a globally sequential, never-reused row id. Shared by
+// every query that fetches a single sale by id — anywhere serializeSale's
+// output reaches a receipt (web, print) or an order-detail view needs it.
+const DAILY_NO_SUBQUERY = `(
+  SELECT COUNT(*) FROM sales s2
+  WHERE s2.user_id = sales.user_id
+    AND s2.created_at::date = sales.created_at::date
+    AND s2.id <= sales.id
+) AS daily_no`;
+
 function serializeSale(row) {
   if (!row) return row;
   const { total_satang, received_amount_satang, change_amount_satang, ...rest } = row;
@@ -71,15 +83,22 @@ router.get('/', asyncHandler(async (req, res) => {
   const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
   const limit = from && to ? '' : 'LIMIT 200';
 
+  // Window-function form of DAILY_NO_SUBQUERY — equivalent, but cheaper over
+  // a whole result set than a per-row correlated subquery.
+  const dailyNo = `ROW_NUMBER() OVER (PARTITION BY user_id, created_at::date ORDER BY id) AS daily_no`;
+
   const { rows } = await db.query(
-    `SELECT sales.*, ${itemCount} FROM sales ${where} ORDER BY created_at DESC ${limit}`,
+    `SELECT sales.*, ${itemCount}, ${dailyNo} FROM sales ${where} ORDER BY created_at DESC ${limit}`,
     params
   );
   res.json(rows.map(serializeSale));
 }));
 
 router.get('/:id', asyncHandler(async (req, res) => {
-  const { rows: [sale] } = await db.query('SELECT * FROM sales WHERE id = $1', [req.params.id]);
+  const { rows: [sale] } = await db.query(
+    `SELECT sales.*, ${DAILY_NO_SUBQUERY} FROM sales WHERE id = $1`,
+    [req.params.id]
+  );
   if (!sale) return res.status(404).json({ error: 'Sale not found' });
   if (!ownsSale(req, sale)) return res.status(403).json({ error: 'ไม่มีสิทธิ์เข้าถึงรายการนี้' });
   const { rows: items } = await db.query('SELECT * FROM sale_items WHERE sale_id = $1', [req.params.id]);

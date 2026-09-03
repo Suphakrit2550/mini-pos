@@ -54,7 +54,7 @@ function renderReceipt(sale, settings) {
 
       <div class="receipt-title">ใบเสร็จรับเงิน / RECEIPT</div>
 
-      <div class="receipt-meta-line"><span>เลขที่บิล</span><span>#${sale.id}</span></div>
+      <div class="receipt-meta-line"><span>เลขที่บิล</span><span>#${sale.daily_no}</span></div>
       <div class="receipt-meta-line"><span>วันที่</span><span>${formatDateTime(sale.created_at)}</span></div>
       ${sale.customer_name ? `<div class="receipt-meta-line"><span>ลูกค้า</span><span>${escapeHtml(sale.customer_name)}</span></div>` : ''}
 
@@ -174,7 +174,7 @@ async function renderReceiptToCanvas(sale, settings, widthPx) {
   center('ใบเสร็จรับเงิน / RECEIPT', baseSize, true);
   y += Math.round(4 * scale);
 
-  row('เลขที่บิล', `#${sale.id}`, smallSize, false);
+  row('เลขที่บิล', `#${sale.daily_no}`, smallSize, false);
   row('วันที่', formatDateTime(sale.created_at), smallSize, false);
   if (sale.customer_name) row('ลูกค้า', sale.customer_name, smallSize, false);
 
@@ -270,7 +270,7 @@ function buildReceiptEscPosText(sale, settings) {
   line();
 
   align(0);
-  line(`เลขที่บิล #${sale.id}`);
+  line(`เลขที่บิล #${sale.daily_no}`);
   line(`วันที่ ${formatDateTime(sale.created_at)}`);
   if (sale.customer_name) line(`ลูกค้า ${sale.customer_name}`);
   divider();

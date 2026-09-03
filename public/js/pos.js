@@ -40,6 +40,24 @@ cartHandle.addEventListener('click', () => {
   posCart.classList.toggle('expanded');
 });
 
+// Mobile only (see .category-tabs.tabs-collapsed in pos.css) — collapses
+// the category bar while scrolling down through the product grid to free up
+// vertical space, and brings it back on scroll-up or once back near the
+// top. No effect on desktop: the collapsed class has no matching style
+// outside the phone breakpoint, so the bar just stays put there.
+let lastGridScrollTop = 0;
+productGrid.addEventListener('scroll', () => {
+  const top = productGrid.scrollTop;
+  if (top <= 8) {
+    categoryTabsEl.classList.remove('tabs-collapsed');
+  } else if (top > lastGridScrollTop + 4) {
+    categoryTabsEl.classList.add('tabs-collapsed');
+  } else if (top < lastGridScrollTop - 4) {
+    categoryTabsEl.classList.remove('tabs-collapsed');
+  }
+  lastGridScrollTop = top;
+}, { passive: true });
+
 function selectedOwnerId() {
   return ownerSelect.value ? Number(ownerSelect.value) : window.currentUserId;
 }

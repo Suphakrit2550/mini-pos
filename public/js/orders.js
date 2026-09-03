@@ -51,7 +51,7 @@ async function loadOrders() {
 
   tableBody.innerHTML = orders.map(o => `
     <tr data-id="${o.id}">
-      <td>#${o.id}</td>
+      <td>#${o.daily_no}</td>
       <td>${formatTime(o.created_at)}</td>
       <td class="order-customer">${o.customer_name ? escapeHtml(o.customer_name) : '-'}</td>
       <td class="text-right">${o.item_count}</td>
@@ -89,7 +89,7 @@ async function openDetail(id) {
   try {
     const sale = await api.getSale(id);
     currentSaleId = sale.id;
-    detailOrderId.textContent = sale.id;
+    detailOrderId.textContent = sale.daily_no;
     detailMeta.textContent = sale.customer_name
       ? `ลูกค้า: ${sale.customer_name} · ${formatTime(sale.created_at)}`
       : formatTime(sale.created_at);

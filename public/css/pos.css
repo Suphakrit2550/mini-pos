@@ -209,6 +209,33 @@
     grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   }
 
+  /* Phone-only: back to a single horizontally-scrollable row instead of the
+     wrapped multi-row grid above (desktop keeps that as-is) — on a screen
+     this narrow, wrapping puts most categories off-screen below the fold
+     anyway, so a swipeable strip actually surfaces more of them at a
+     glance. Also collapses to reclaim vertical space while scrolling the
+     product grid — see the scroll listener on #productGrid in pos.js. */
+  .category-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+    max-height: 48px;
+    opacity: 1;
+    transition: max-height 0.25s ease, opacity 0.2s ease, margin-bottom 0.25s ease;
+  }
+
+  .category-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .category-tabs.tabs-collapsed {
+    max-height: 0;
+    opacity: 0;
+    margin-bottom: 0;
+  }
+
   .pos-cart {
     width: auto;
     flex-shrink: 0;
@@ -371,6 +398,11 @@
 .cart-footer {
   padding: 16px;
   border-top: 1px solid var(--border);
+}
+
+#checkoutBtn {
+  height: 56px;
+  font-size: 18px;
 }
 
 .cart-total-row {
