@@ -285,6 +285,17 @@ function handleBarcodeScan(code) {
 // แต่ตอนกำลังพิมพ์ในช่องข้อความจริงๆ อยู่ (เช่น ค้นหาสินค้าด้วยมือ, ชื่อลูกค้า) ปล่อยให้พิมพ์ปกติ
 let scanBuffer = '';
 let lastScanKeyTime = 0;
+
+// e.key แปลรหัสปุ่มตามภาษาคีย์บอร์ดที่เปิดใช้งานอยู่ ณ ตอนนั้นบนเครื่อง — ถ้าเผลอสลับเป็น
+// ภาษาไทยไว้ ตัวเลขที่เครื่องสแกนยิงมา (กดปุ่มแถวตัวเลขจริง) จะถูกตีความเป็นอักษรไทยที่ผัง
+// อยู่ตำแหน่งเดียวกันแทน ทำให้บาร์โค้ดออกมาเป็นตัวอักษรมั่วๆ ไม่ใช่เลข — ใช้ e.code (ตำแหน่ง
+// ปุ่มจริง ไม่ขึ้นกับภาษา) สำหรับปุ่มตัวเลขแทน กันปัญหานี้โดยไม่ต้องพึ่งผู้ใช้คอยสลับภาษาเอง
+const DIGIT_KEY_CODES = {
+  Digit0: '0', Digit1: '1', Digit2: '2', Digit3: '3', Digit4: '4',
+  Digit5: '5', Digit6: '6', Digit7: '7', Digit8: '8', Digit9: '9',
+  Numpad0: '0', Numpad1: '1', Numpad2: '2', Numpad3: '3', Numpad4: '4',
+  Numpad5: '5', Numpad6: '6', Numpad7: '7', Numpad8: '8', Numpad9: '9',
+};
 document.addEventListener('keydown', (e) => {
   const tag = document.activeElement.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA') return;
@@ -302,7 +313,7 @@ document.addEventListener('keydown', (e) => {
     if (scanBuffer) handleBarcodeScan(scanBuffer);
     scanBuffer = '';
   } else if (e.key.length === 1) {
-    scanBuffer += e.key;
+    scanBuffer += DIGIT_KEY_CODES[e.code] || e.key;
   }
 });
 
