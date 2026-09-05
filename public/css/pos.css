@@ -210,30 +210,19 @@
   }
 
   /* Phone-only: back to a single horizontally-scrollable row instead of the
-     wrapped multi-row grid above (desktop keeps that as-is) — on a screen
-     this narrow, wrapping puts most categories off-screen below the fold
-     anyway, so a swipeable strip actually surfaces more of them at a
-     glance. Also collapses to reclaim vertical space while scrolling the
-     product grid — see the scroll listener on #productGrid in pos.js. */
+     wrapped multi-row grid above (desktop and tablet keep that as-is) — on
+     a screen this narrow, wrapping puts most categories off-screen below
+     the fold anyway, so a swipeable strip actually surfaces more of them
+     at a glance. */
   .category-tabs {
     flex-wrap: nowrap;
     overflow-x: auto;
-    overflow-y: hidden;
     padding-bottom: 4px;
     scrollbar-width: none;
-    max-height: 48px;
-    opacity: 1;
-    transition: max-height 0.25s ease, opacity 0.2s ease, margin-bottom 0.25s ease;
   }
 
   .category-tabs::-webkit-scrollbar {
     display: none;
-  }
-
-  .category-tabs.tabs-collapsed {
-    max-height: 0;
-    opacity: 0;
-    margin-bottom: 0;
   }
 
   .pos-cart {
@@ -312,6 +301,29 @@
 
   .pos-cart.expanded .cart-footer {
     display: block;
+  }
+}
+
+/* Touch devices (phones and tablets — anything without mouse hover, the
+   inverse of the @media (hover: hover) rules above) — collapses the
+   category bar while scrolling the product grid to reclaim vertical
+   space, and brings it back on scroll-up or once back at the top. See the
+   scroll listener on #productGrid in pos.js. max-height is sized well
+   above any realistic wrapped-chip height so it never clips the bar while
+   expanded — tablets wrap onto multiple rows (see .category-tabs at the
+   top of this file), unlike phones' single scrollable row above. */
+@media (hover: none) {
+  .category-tabs {
+    overflow-y: hidden;
+    max-height: 300px;
+    opacity: 1;
+    transition: max-height 0.25s ease, opacity 0.2s ease, margin-bottom 0.25s ease;
+  }
+
+  .category-tabs.tabs-collapsed {
+    max-height: 0;
+    opacity: 0;
+    margin-bottom: 0;
   }
 }
 
